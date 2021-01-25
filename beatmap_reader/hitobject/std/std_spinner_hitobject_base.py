@@ -3,12 +3,12 @@ from ..hitobject import Hitobject
 
 class StdSpinnerHitobjectBase(Hitobject):
 
-    def __init__(self, beatmap=None):
-        self.beatmap  = beatmap
-        self.end_time = None
-
-        Hitobject.__init__(self)
+    def __init__(self, **kargs):
+        Hitobject.__init__(self, **kargs)
 
     
-    def get_end_time(self):
-        return self.end_time
+    def generate_tick_data(self, **kargs):
+        self.tdata = [
+            [ self.pos_x(), self.pos_y(), self.start_time() ],
+            [ self.pos_x(), self.pos_y(), self.end_time() ],
+        ]

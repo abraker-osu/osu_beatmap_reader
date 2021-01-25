@@ -1,3 +1,4 @@
+import numpy as np
 import math
 
 from .gamemode import Gamemode
@@ -61,6 +62,20 @@ class BeatmapBase():
         self.bpm_max = float('-inf')
 
 
+    def data(self):
+        data = []
+        timing_shape = np.shape(self.hitobjects[0].tick_data())[1] + 1
+
+        for i, hitobject in zip(range(len(self.hitobjects)), self.hitobjects):
+            timing = np.zeros(timing_shape)
+            for tick in hitobject.tick_data():
+                timing[0] = i
+                timing[1:] = tick
+                data.append(timing)
+        
+        return np.asarray(data)
+
+
     def set_cs(self, cs):
         if not 0 <= cs <= 10:
             raise ValueError('CS must be between 0 and 10, inclusive!')
@@ -91,10 +106,3 @@ class BeatmapBase():
 
     def set_st(self, st):
         self.difficulty.st = float(st)
-
-
-    # Returns the key column based on the xpos of the note and the number of keys there are
-    def get_column(self, hitobject):
-        columns = self.difficulty.cs
-        ratio = self.difficulty.cs / BeatmapBase.PLAYFIELD_WIDTH   # columns per osu!px
-        return min(math.floor(ratio*hitobject.pos[0]), columns - 1)

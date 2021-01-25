@@ -48,6 +48,7 @@ class Bezier():
 
         for i in range(n):
             b = bernstein(i, n - 1, t)
-            c.append([ curve_points[i][0] * b, curve_points[i][1] * b ])
+            c[0] += curve_points[i][0] * b
+            c[1] += curve_points[i][1] * b
 
         return c

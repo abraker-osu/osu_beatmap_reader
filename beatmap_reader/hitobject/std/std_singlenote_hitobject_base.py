@@ -4,13 +4,12 @@ from ..hitobject import Hitobject
 
 class StdSingleNoteHitobjectBase(Hitobject):
 
-    def __init__(self):
-        Hitobject.__init__(self)
+    def __init__(self, **kargs):
+        Hitobject.__init__(self, **kargs)
 
 
-    def time_to_pos(self, time):
-        return self.pos
-        
-
-    def get_aimpoint_times(self):
-        return [ self.time ]
+    def generate_tick_data(self, **kargs):
+        self.tdata = [
+            [ self.pos_x(), self.pos_y(), self.start_time() ],
+            [ self.pos_x(), self.pos_y(), self.end_time() ],
+        ]

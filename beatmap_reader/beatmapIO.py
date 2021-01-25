@@ -6,9 +6,14 @@ from .gamemode import Gamemode
 
 from .hitobject.hitobject import Hitobject
 
-from .hitobject.std.std_singlenote_io import StdSingleNoteIO
-from .hitobject.std.std_holdnote_io import StdHoldNoteIO
-from .hitobject.std.std_spinner_io import StdSpinnerIO
+#from .hitobject.std.std_singlenote_io import StdSingleNoteIO
+#from .hitobject.std.std_holdnote_io import StdHoldNoteIO
+#from .hitobject.std.std_spinner_io import StdSpinnerIO
+
+from .hitobject.std.std_singlenote_hitobject_base import StdSingleNoteHitobjectBase
+from .hitobject.std.std_holdnote_hitobject_base import StdHoldNoteHitobjectBase
+from .hitobject.std.std_spinner_hitobject_base import StdSpinnerHitobjectBase
+
 
 #from .hitobject.taiko.taiko_singlenote_hitobject import TaikoSingleNoteHitobject
 #from .hitobject.taiko.taiko_holdnote_hitobject import TaikoHoldNoteHitobject
@@ -18,8 +23,11 @@ from .hitobject.std.std_spinner_io import StdSpinnerIO
 #from .hitobject.catch.catch_holdnote_hitobject import CatchHoldNoteHitobject
 #from .hitobject.catch.catch_spinner_hitobject import CatchSpinnerHitobject
 
-from .hitobject.mania.mania_singlenote_io import ManiaSingleNoteIO
-from .hitobject.mania.mania_holdnote_io import ManiaHoldNoteIO
+#from .hitobject.mania.mania_singlenote_io import ManiaSingleNoteIO
+#from .hitobject.mania.mania_holdnote_io import ManiaHoldNoteIO
+
+from .hitobject.mania.mania_singlenote_hitobject_base import ManiaSingleNoteHitobjectBase
+from .hitobject.mania.mania_holdnote_hitobject_base import ManiaHoldNoteHitobjectBase
 
 
 '''
@@ -96,16 +104,10 @@ class BeatmapIO():
 
         # Process all the data
         BeatmapIO.__process_timing_points(beatmap)
-
-        if beatmap.gamemode == Gamemode.OSU or beatmap.gamemode == None:
-            BeatmapIO.__process_slider_timings(beatmap)
-            BeatmapIO.__process_slider_tick_times(beatmap)
-
-        if beatmap.gamemode == Gamemode.MANIA:
-            BeatmapIO.__process_columns(beatmap)
+        BeatmapIO.__postprocess_hitobjects(beatmap)
 
         # Fill in extra data if it's missing
-        BeatmapIO.__post_process(beatmap)
+        BeatmapIO.__postprocess_map(beatmap)
 
         return beatmap
 
@@ -132,7 +134,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __post_process(beatmap):
+    def __postprocess_map(beatmap):
         if beatmap.difficulty.ar == None:
             beatmap.set_ar(beatmap.difficulty.od)
 
@@ -366,15 +368,34 @@ class BeatmapIO():
 
         if beatmap.gamemode == Gamemode(Gamemode.OSU) or beatmap.gamemode == None:
             if hitobject_type & Hitobject.CIRCLE > 0:
-                beatmap.hitobjects.append(StdSingleNoteIO.load_singlenote(data, beatmap.difficulty))
+                beatmap.hitobjects.append(StdSingleNoteHitobjectBase(
+                    posx   = int(data[0]), 
+                    posy   = int(data[1]), 
+                    tstart = int(data[2]), 
+                    htype  = int(data[3]),
+                ))
                 return
 
             if hitobject_type & Hitobject.SLIDER > 0:
-                beatmap.hitobjects.append(StdHoldNoteIO.load_holdnote(data, beatmap.difficulty))
+                beatmap.hitobjects.append(StdHoldNoteHitobjectBase(
+                    posx    = int(data[0]), 
+                    posy    = int(data[1]), 
+                    tstart  = int(data[2]), 
+                    htype   = int(data[3]),
+                    sdata   = data[5],
+                    repeats = int(data[6]),
+                    px_len  = float(data[7]),
+                ))
                 return
 
             if hitobject_type & Hitobject.SPINNER > 0:
-                beatmap.hitobjects.append(StdSpinnerIO.load_spinner(data, beatmap.difficulty))
+                beatmap.hitobjects.append(StdSpinnerHitobjectBase(
+                    posx   = int(data[0]),
+                    posy   = int(data[1]),
+                    tstart = int(data[2]),
+                    htype  = int(data[3]),
+                    tend   = int(data[5]),
+                ))
                 return
 
             raise BeatmapIO.BeatmapIOException(f'Unexpected osu!std hitobject encountered: {hitobject_type}')
@@ -415,11 +436,24 @@ class BeatmapIO():
 
         if beatmap.gamemode == Gamemode(Gamemode.MANIA):
             if hitobject_type & Hitobject.CIRCLE > 0:
-                beatmap.hitobjects.append(ManiaSingleNoteIO.load_singlenote(data, beatmap.difficulty))
+                beatmap.hitobjects.append(ManiaSingleNoteHitobjectBase(
+                    posx   = int(data[0]),
+                    posy   = int(data[1]),
+                    tstart = int(data[2]), 
+                    htype  = int(data[3]),
+                    keys   = beatmap.difficulty.cs
+                ))
                 return
 
             if hitobject_type & Hitobject.MANIALONG > 0:
-                beatmap.hitobjects.append(ManiaHoldNoteIO.load_holdnote(data, beatmap.difficulty))
+                beatmap.hitobjects.append(ManiaHoldNoteHitobjectBase(
+                    posx   = int(data[0]),
+                    posy   = int(data[1]),
+                    tstart = int(data[2]),
+                    htype  = int(data[3]),
+                    sdata  = data[5],
+                    keys   = beatmap.difficulty.cs
+                ))
                 return
 
             raise BeatmapIO.BeatmapIOException(f'Unexpected osu!mania hitobject encountered: {hitobject_type}')
@@ -456,50 +490,26 @@ class BeatmapIO():
             timing_point.bpm = bpm
             timing_point.slider_multiplier = slider_multiplier
 
-    
+
     @staticmethod
-    def __process_slider_timings(beatmap):
+    def __postprocess_hitobjects(beatmap):
         for hitobject in beatmap.hitobjects:
-            if not hitobject.is_hitobject_type(Hitobject.SLIDER):
-                continue
+            if beatmap.gamemode == Gamemode.OSU or beatmap.gamemode == None:
+                if not hitobject.is_htype(Hitobject.SLIDER):
+                    hitobject.generate_tick_data()
+                    continue
 
-            # Find the last timing that occurs before the hitobject starts
-            timing_points = np.asarray(list([ timing_point.offset for timing_point in beatmap.timing_points ]))
-            timing_point_idx = np.where(timing_points <= hitobject.time)[0][-1]
-            timing_point = beatmap.timing_points[timing_point_idx]
+                # Find the last timing that occurs before the hitobject starts
+                for timing_point in beatmap.timing_points:
+                    if timing_point.offset > hitobject.start_time():
+                        break
 
-            hitobject.to_repeat_time = round(((-600.0/timing_point.bpm) * hitobject.pixel_length * timing_point.slider_multiplier) / (100.0 * beatmap.difficulty.sm))
-            hitobject.end_time = hitobject.time + hitobject.to_repeat_time*hitobject.repeat
+                to_repeat_time = round(((-600.0/timing_point.bpm) * hitobject.px_len * timing_point.slider_multiplier) / (100.0 * beatmap.difficulty.sm))
+                end_time = hitobject.start_time() + to_repeat_time*hitobject.repeats
 
+                hitobject.generate_tick_data(end_time=end_time, sm=beatmap.difficulty.sm, st=beatmap.difficulty.st)
 
-    @staticmethod
-    def __process_slider_tick_times(beatmap):
-        beatmap.slider_tick_times = []
-        for hitobject in beatmap.hitobjects:
-            if not hitobject.is_hitobject_type(Hitobject.SLIDER):
-                continue
-
-            ms_per_beat = (100.0 * beatmap.difficulty.sm)/(hitobject.get_velocity() * beatmap.difficulty.st)
-            hitobject.tick_times = []
-
-            for beat_time in np.arange(hitobject.time, hitobject.end_time, ms_per_beat):
-                hitobject.tick_times.append(beat_time)
-
-            if hitobject.tick_times[-1] != hitobject.end_time:
-                hitobject.tick_times.append(hitobject.end_time)
-
-
-    @staticmethod
-    def __process_columns(beatmap):
-        hitobjects = beatmap.hitobjects
-        beatmap.hitobjects = []
-
-        for column in range(int(beatmap.difficulty.cs)):
-            beatmap.hitobjects.append([])
-
-        for hitobject in hitobjects:
-            column = beatmap.get_column(hitobject)
-            beatmap.hitobjects[column].append(hitobject)
-            
+            else:
+                hitobject.generate_tick_data()
 
 BeatmapIO.init()

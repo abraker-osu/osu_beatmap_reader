@@ -18,6 +18,10 @@ def bernstein(i, n, t):
     return binomialCoefficient(n, i) * (t**i) * ((1 - t)**(n - i))
 
 
+def bound(min_val, max_val, value):
+    return min(max(value, min_val), max_val)
+    
+
 def value_to_percent(min_val, max_val, value):
     return 1.0 - ((max_val - bound(min_val, value, max_val)) / (max_val - min_val))
 

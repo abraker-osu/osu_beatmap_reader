@@ -29,15 +29,15 @@ class TestBeatmap(unittest.TestCase):
         self.assertEqual(beatmap.timing_points[178].inherited, True)
 
         # Test hitobjects
-        self.assertEqual(len(beatmap.hitobjects), 4)
-        self.assertEqual(sum(len(column) for column in beatmap.hitobjects), 3004)
+        self.assertEqual(max(beatmap.data()[:, 1]), 3)
+        self.assertEqual(len(beatmap.data())/2, 3004)
 
         # TODO: test hitobjects
 
 
     def test_beatmap_loading_std(self):
         beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\Mutsuhiko Izumi - Red Goose (nold_1702) [ERT Basic].osu')
-        
+
         # Test metadata
         self.assertEqual(beatmap.metadata.beatmap_format, 9)
         self.assertEqual(beatmap.metadata.title, 'Red Goose')
