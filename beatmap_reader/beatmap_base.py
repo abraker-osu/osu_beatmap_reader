@@ -87,25 +87,25 @@ class BeatmapBase(IBeatmap):
 
     def set_cs(self, cs):
         if not 0 <= cs <= 10:
-            raise ValueError('CS must be between 0 and 10, inclusive!')
+            raise ValueError(f'CS must be between 0 and 10, inclusive! CS = {cs}')
         self.difficulty.cs = float(cs)
 
 
     def set_ar(self, ar):
         if not 0 <= ar <= 10:
-            raise ValueError('AR must be between 0 and 10, inclusive!')
+            raise ValueError(f'AR must be between 0 and 10, inclusive! AR = {ar}')
         self.difficulty.ar = float(ar)
 
 
     def set_od(self, od):
         if not 0 <= od <= 10:
-            raise ValueError('OD must be between 0 and 10, inclusive!')
+            raise ValueError(f'OD must be between 0 and 10, inclusive! OD = {od}')
         self.difficulty.od = float(od)
 
 
     def set_hp(self, hp):
         if not 0 <= hp <= 10:
-            raise ValueError('HP must be between 0 and 10, inclusive!')
+            raise ValueError(f'HP must be between 0 and 10, inclusive! HP = {hp}')
         self.difficulty.hp = float(hp)
 
 
