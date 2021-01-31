@@ -1,5 +1,7 @@
 import numpy as np
 
+from ..osu_interfaces.IHitobject import IHitobject
+
 
 """
 Abstract object that holds common hitobject data
@@ -7,7 +9,7 @@ Abstract object that holds common hitobject data
 Input: 
     beatmap_data - hitobject data read from the beatmap file
 """
-class Hitobject():
+class Hitobject(IHitobject):
 
     CIRCLE  = 1 << 0
     SLIDER  = 1 << 1
