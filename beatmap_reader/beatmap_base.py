@@ -77,6 +77,14 @@ class BeatmapBase(IBeatmap):
         return np.asarray(data)
 
 
+    def get_diff_data(self):
+        return self.difficulty
+
+
+    def get_hitobjects(self):
+        return self.hitobjects
+
+
     def set_cs(self, cs):
         if not 0 <= cs <= 10:
             raise ValueError('CS must be between 0 and 10, inclusive!')
