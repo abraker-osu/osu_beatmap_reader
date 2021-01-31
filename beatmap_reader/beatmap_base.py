@@ -86,8 +86,13 @@ class BeatmapBase(IBeatmap):
 
 
     def set_cs(self, cs):
-        if not 0 <= cs <= 10:
-            raise ValueError(f'CS must be between 0 and 10, inclusive! CS = {cs}')
+        if self.gamemode == Gamemode.MANIA:
+            if not 0 <= cs <= 18:
+                raise ValueError(f'CS must be between 0 and 10, inclusive! CS = {cs}')
+        else:
+            if not 0 <= cs <= 10:
+                raise ValueError(f'CS must be between 0 and 10, inclusive! CS = {cs}')
+
         self.difficulty.cs = float(cs)
 
 
