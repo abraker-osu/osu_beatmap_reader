@@ -1,6 +1,6 @@
 import numpy as np
 
-from osu_interfaces.IHitobject import IHitobject
+from osu_interfaces import IHitobject
 
 
 """

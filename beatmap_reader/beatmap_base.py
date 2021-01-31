@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-from osu_interfaces.IBeatmap import IBeatmap
+from osu_interfaces import IBeatmap
 from .gamemode import Gamemode
 
 
