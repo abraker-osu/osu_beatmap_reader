@@ -116,8 +116,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
         # ab  bc  cd  de  ef  fg
         for i in range(len(curve_points) - 1):
             bezier = Bezier([ curve_points[i], curve_points[i + 1] ])
-            gen_points.append(bezier.curve_points)
-
+            gen_points += bezier.curve_points
+            
         return gen_points
 
 
