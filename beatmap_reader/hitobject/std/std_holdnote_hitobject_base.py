@@ -98,6 +98,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
                 gen_points = self.__make_circumscribed(curve_points, px_len)
                 if len(gen_points) == 0:
                     return self.__make_bezier(curve_points)
+                return gen_points
             
             return self.__make_bezier(curve_points)
 
