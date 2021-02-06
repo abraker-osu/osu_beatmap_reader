@@ -63,3 +63,7 @@ class TestBeatmap(unittest.TestCase):
         self.assertEqual(len(beatmap.hitobjects), 102)
 
         # TODO: test hitobjects
+
+
+    def test_beatmap_loading_custom(self):
+        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\abraker - unknown (abraker) [250ms].osu')
