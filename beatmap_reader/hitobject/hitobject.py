@@ -11,13 +11,6 @@ Input:
 """
 class Hitobject(IHitobject):
 
-    CIRCLE  = 1 << 0
-    SLIDER  = 1 << 1
-    NCOMBO  = 1 << 2
-    SPINNER = 1 << 3
-    # ???
-    MANIALONG = 1 << 7
-
     HDATA_POSX = 0   # Hitobject x position
     HDATA_POSY = 1   # Hitobject y position
     HDATA_TSRT = 2   # Hitobject start time
