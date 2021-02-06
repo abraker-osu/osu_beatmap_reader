@@ -145,26 +145,27 @@ class StdHoldNoteHitobjectBase(Hitobject):
         gen_points = []
 
         # construct the three points
-        start = curve_points[0]
-        mid   = curve_points[1]
-        end   = curve_points[2]
+        start = np.asarray(curve_points[0])
+        mid   = np.asarray(curve_points[1])
+        end   = np.asarray(curve_points[2])
 
         # find the circle center
-        mida = start.midpoint(mid)
-        midb = end.midpoint(mid)
-        nora = (mid - start).nor()
-        norb = (mid - end).nor()
-
+        mida = (start + mid)/2   # midpoint
+        midb = (end + mid)/2     # midpoint
+        nora = np.asarray([ start[1] - mid[1], mid[0] - start[0] ])   # This is turning it into (-y, x)
+        norb = np.asarray([ end[1]   - mid[1], mid[0] - end[0] ])
+        
         circle_center = intersect(mida, nora, midb, norb)
-        if not circle_center: return gen_points
+        if type(circle_center) == type(None):
+            return gen_points
 
         start_angle_point = start - circle_center
         mid_angle_point   = mid - circle_center
         end_angle_point   = end - circle_center
 
-        start_angle = math.atan2(start_angle_point.y, start_angle_point.x)
-        mid_angle   = math.atan2(mid_angle_point.y, mid_angle_point.x)
-        end_angle   = math.atan2(end_angle_point.y, end_angle_point.x)
+        start_angle = math.atan2(start_angle_point[1], start_angle_point[0])  # It's math.atan2(y, x)
+        mid_angle   = math.atan2(mid_angle_point[1], mid_angle_point[0])
+        end_angle   = math.atan2(end_angle_point[1], end_angle_point[0])
 
         if not start_angle < mid_angle < end_angle:
             if abs(start_angle + 2*math.pi - end_angle) < 2*math.pi and (start_angle + 2*math.pi < mid_angle < end_angle):
@@ -190,7 +191,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         for i in range(len):
             ang = lerp(start_angle, end_angle, i/step)
-            xy  = [ math.cos(ang)*radius + circle_center.x, math.sin(ang)*radius + circle_center.y ]
+            xy  = [ math.cos(ang)*radius + circle_center[0], math.sin(ang)*radius + circle_center[1] ]
             gen_points.append(xy)
         
         return gen_points

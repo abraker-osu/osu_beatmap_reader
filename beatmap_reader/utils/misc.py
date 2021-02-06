@@ -44,13 +44,8 @@ def dist(a, b):
 
 
 def intersect(a, ta, b, tb):
-    des = tb[:, 0]*ta[:, 1] - tb[:, 1]*ta[:, 0]
-    u = ((b[:, 1] - a[:, 1])*ta[:, 0] + (a[:, 0] - b[:, 0])*ta[:, 1]) / des
-    
-    b[:, 0] += tb[:, 0]*u
-    b[:, 1] += tb[:, 1]*u
+    des = tb[0]*ta[1] - tb[1]*ta[0]
+    if abs(des) < 0.00001: return None
 
-    # TODO: Handle des div by 0
-    # if abs(des) < 0.00001: return None
-
-    return b
+    u = ((b[1] - a[1])*ta[0] + (a[0] - b[0])*ta[1]) / des
+    return b + tb*u
