@@ -18,6 +18,12 @@ class Gamemode():
         if type(other) == int:
             return self.value == other
 
+        if type(other) == Gamemode:
+            return self.value == other.value
+
+        if type(other) == type(None):
+            return False
+
         raise TypeError(f'Must compare to gamemode indentifier   type = {type(other)}')
 
 
