@@ -53,7 +53,7 @@ class BeatmapBase(IBeatmap):
         self.metadata   = BeatmapBase.Metadata()
         self.difficulty = BeatmapBase.Difficulty()
         self.gamemode   = None
-        
+
         self.timing_points     = []
         self.hitobjects        = []
         self.end_times         = []

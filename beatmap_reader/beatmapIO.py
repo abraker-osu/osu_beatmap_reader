@@ -1,4 +1,5 @@
 import warnings
+import hashlib
 import numpy as np
 
 from .beatmap_base import BeatmapBase
@@ -84,7 +85,9 @@ class BeatmapIO():
     def open_beatmap(filepath=None):
         with open(filepath, 'rt', encoding='utf-8') as beatmap_file:
             beatmap = BeatmapIO.load_beatmap(beatmap_file)
-        
+
+        beatmap.metadata.beatmap_md5 = hashlib.md5(open(filepath, 'rb').read()).hexdigest()
+
         return beatmap
 
 
@@ -122,15 +125,6 @@ class BeatmapIO():
     def save_beatmap(beatmap_data, filepath):
         with open(filepath, 'wt', encoding='utf-8') as f:
             f.write(beatmap_data)
-
-
-    """
-    Returns:
-        MD5 checksum of the beatmap file
-    """
-    @staticmethod
-    def get_md5(beatmap):
-        pass
 
 
     @staticmethod
