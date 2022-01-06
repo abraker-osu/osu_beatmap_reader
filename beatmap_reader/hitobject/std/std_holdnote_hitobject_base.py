@@ -33,6 +33,11 @@ class StdHoldNoteHitobjectBase(Hitobject):
         self.hdata[Hitobject.HDATA_TEND] = kargs['end_time']
         velocity = self.get_velocity()
         ms_per_beat = (100.0 * kargs['sm'])/(velocity * kargs['st'])
+        ms_per_repeat = (self.end_time() - self.start_time()) / self.repeats
+
+        for repeat in range(1, self.repeats):
+            x_pos, y_pos = self.gen_points[0] if repeat % 2 == 0 else self.gen_points[-1]
+            self.tdata.append([ x_pos, y_pos, self.start_time() + repeat * ms_per_repeat ])
 
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
         for beat_time in np.arange(self.start_time(), self.end_time() - 10 * velocity, ms_per_beat):
