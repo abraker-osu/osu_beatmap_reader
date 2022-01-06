@@ -1,6 +1,7 @@
 import unittest
 
 from ..beatmapIO import BeatmapIO
+from ..hitobject.hitobject import Hitobject
 
 
 class TestBeatmap(unittest.TestCase):
@@ -62,7 +63,37 @@ class TestBeatmap(unittest.TestCase):
         # Test hitobjects
         self.assertEqual(len(beatmap.hitobjects), 102)
 
-        # TODO: test hitobjects
+        self.assertTrue(beatmap.hitobjects[-1].is_htype(Hitobject.SPINNER))
+        self.assertEqual(beatmap.hitobjects[-1].hdata[Hitobject.HDATA_TSRT], 114649)
+        self.assertEqual(beatmap.hitobjects[-1].hdata[Hitobject.HDATA_TEND], 117799)
+
+        self.assertTrue(beatmap.hitobjects[16].is_htype(Hitobject.CIRCLE))
+        self.assertEqual(beatmap.hitobjects[16].hdata[Hitobject.HDATA_TSRT], 24499)
+        self.assertEqual(beatmap.hitobjects[16].hdata[Hitobject.HDATA_POSX], 208)
+        self.assertEqual(beatmap.hitobjects[16].hdata[Hitobject.HDATA_POSY], 84)
+
+        self.assertTrue(beatmap.hitobjects[23].is_htype(Hitobject.SLIDER))
+        self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_TSRT], 28399)
+        self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_TEND], 29299)
+        self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_POSX], 172)
+        self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_POSY], 116)
+        self.assertEqual(beatmap.hitobjects[23].repeats, 2)
+        beatmap.hitobjects[23].tdata.sort(key=lambda t: t[Hitobject.TDATA_T])
+        self.assertEqual(len(beatmap.hitobjects[23].tdata), 5)
+        # tick
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[1][Hitobject.TDATA_X], 207, places=0)
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[1][Hitobject.TDATA_Y], 48, places=0)
+        # repeat
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[2][Hitobject.TDATA_X], 238, places=0)
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[2][Hitobject.TDATA_Y], 30, places=0)
+        # tick
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[3][Hitobject.TDATA_X], 207, places=0)
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[3][Hitobject.TDATA_Y], 48, places=0)
+        # end
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_X], 175, places=0)
+        self.assertAlmostEquals(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_Y], 107, places=0)
+
+        # TODO: test more sliders
 
 
     def test_beatmap_loading_custom(self):
