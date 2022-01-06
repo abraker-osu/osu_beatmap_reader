@@ -31,15 +31,20 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def generate_tick_data(self, **kargs):
         self.hdata[Hitobject.HDATA_TEND] = kargs['end_time']
-        ms_per_beat = (100.0 * kargs['sm'])/(self.get_velocity() * kargs['st'])
+        velocity = self.get_velocity()
+        ms_per_beat = (100.0 * kargs['sm'])/(velocity * kargs['st'])
 
-        for beat_time in np.arange(self.start_time(), self.end_time(), ms_per_beat):
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
+        for beat_time in np.arange(self.start_time(), self.end_time() - 10 * velocity, ms_per_beat):
             x_pos, y_pos = self.time_to_pos(beat_time)
             self.tdata.append([ x_pos, y_pos, beat_time ])
 
-        if self.tdata[-1][Hitobject.TDATA_T] != self.end_time():
-            x_pos, y_pos = self.time_to_pos(self.end_time())
-            self.tdata.append([ x_pos, y_pos, self.end_time() ])
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
+        midpoint_time = (self.start_time() + self.end_time()) / 2
+        end_tick_time = max(self.end_time() - 36, midpoint_time)
+        x_pos, y_pos = self.time_to_pos(end_tick_time)
+        self.tdata.append([ x_pos, y_pos, end_tick_time ])
 
 
     def time_to_pos(self, time):
