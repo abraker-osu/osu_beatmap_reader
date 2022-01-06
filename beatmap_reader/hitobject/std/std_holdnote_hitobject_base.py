@@ -59,7 +59,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
     # TODO: make sure this is correct
     # TODO: test a slider 200px across with various repeat times and tick spacings
     def get_velocity(self):
-        return self.px_len / (self.end_time() - self.start_time())
+        return self.repeats * self.px_len / (self.end_time() - self.start_time())
 
 
     def __idx_to_pos(self, idx):
