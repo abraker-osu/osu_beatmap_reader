@@ -78,7 +78,6 @@ class TestBeatmap(unittest.TestCase):
         self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_POSX], 172)
         self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_POSY], 116)
         self.assertEqual(beatmap.hitobjects[23].repeats, 2)
-        beatmap.hitobjects[23].tdata.sort(key=lambda t: t[Hitobject.TDATA_T])
         self.assertEqual(len(beatmap.hitobjects[23].tdata), 5)
         # tick
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[1][Hitobject.TDATA_X], 207, places=0)

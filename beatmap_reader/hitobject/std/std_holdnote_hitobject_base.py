@@ -39,14 +39,24 @@ class StdHoldNoteHitobjectBase(Hitobject):
         ms_per_beat = (100.0 * kargs['sm'])/(velocity * kargs['st'])
         ms_per_repeat = (self.end_time() - self.start_time()) / self.repeats
 
-        for repeat in range(1, self.repeats):
-            x_pos, y_pos = self.gen_points[0] if repeat % 2 == 0 else self.gen_points[-1]
-            self.tdata.append([ x_pos, y_pos, self.start_time() + repeat * ms_per_repeat ])
-
+        tick_times = list(np.arange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
-        for beat_time in np.arange(self.start_time(), self.end_time() - 10 * velocity, ms_per_beat):
-            x_pos, y_pos = self.time_to_pos(beat_time)
-            self.tdata.append([ x_pos, y_pos, beat_time ])
+        while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > self.px_len - 10 * velocity:
+            tick_times.pop()
+        ticks = [ (self.time_to_pos(tick_time), tick_time - self.start_time()) for tick_time in tick_times ]
+
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L115
+        for repeat in range(self.repeats):
+            reverse = repeat % 2 == 1
+
+            repeat_start_time = self.start_time() + repeat * ms_per_repeat
+            x_pos, y_pos = self.gen_points[-1] if reverse else self.gen_points[0]
+            self.tdata.append([ x_pos, y_pos, repeat_start_time ])
+
+            if reverse:
+                self.tdata.extend([ *pos, repeat_start_time + (ms_per_repeat - time) ] for pos, time in reversed(ticks))
+            else:
+                self.tdata.extend([ *pos, repeat_start_time + time ] for pos, time in ticks)
 
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
@@ -57,7 +67,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     def time_to_pos(self, time):
-        return self.__percent_to_pos(value_to_percent(self.start_time(), self.end_time(), time))
+        return self.__dist_to_pos(self.__time_to_dist(time))
 
 
     # TODO: make sure this is correct
@@ -66,11 +76,15 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return self.repeats * self.px_len / (self.end_time() - self.start_time())
 
 
-    def __percent_to_pos(self, percent):
+    def __time_to_dist(self, time):
+        percent = value_to_percent(self.start_time(), self.end_time(), time)
         if percent < 0.0: return self.gen_points[0]
         if percent > 1.0: return self.gen_points[-1]
 
-        distance = self.px_len * triangle(percent * self.repeats, 2)
+        return self.px_len * triangle(percent * self.repeats, 2)
+
+
+    def __dist_to_pos(self, distance):
         i = binary_search(self.length_sums, distance)
         if i == 0: return self.gen_points[0]
         if i == len(self.gen_points): return self.gen_points[-1]
