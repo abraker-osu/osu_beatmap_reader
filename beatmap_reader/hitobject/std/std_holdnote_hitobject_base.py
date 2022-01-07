@@ -22,7 +22,10 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # The rough generated slider curve
         self.gen_points = self.__process_curve_points(curve_type, curve_points, kargs['px_len'])
-        self.__calculate_length_sums()
+
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L283-L284
+        extend = len(curve_points) > 2 and curve_points[-1] == curve_points[-2]
+        self.__calculate_length_sums(kargs['px_len'], extend)
         
         self.px_len       = kargs['px_len']
         self.repeats      = kargs['repeats']
@@ -115,11 +118,23 @@ class StdHoldNoteHitobjectBase(Hitobject):
             return self.__make_linear(curve_points)
 
 
-    def __calculate_length_sums(self):
+    def __calculate_length_sums(self, px_len, extend):
         self.length_sums = [ 0 ]
         for i in range(len(self.gen_points) - 1):
             distance = dist(self.gen_points[i], self.gen_points[i + 1])
             self.length_sums.append(self.length_sums[-1] + distance)
+
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
+        while self.length_sums[-1] > px_len:
+            self.length_sums.pop()
+            self.gen_points.pop()
+
+        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
+        if extend and len(self.gen_points) >= 2:
+            p1, p2 = self.gen_points[-2:]
+            ratio = (px_len - self.length_sums[-2]) / (self.length_sums[-1] - self.length_sums[-2])
+            self.gen_points[-1][0] = p2[0] + lerp(p1[0], p2[0], ratio)
+            self.gen_points[-1][1] = p2[1] + lerp(p1[1], p2[1], ratio)
 
 
     def __make_linear(self, curve_points):
