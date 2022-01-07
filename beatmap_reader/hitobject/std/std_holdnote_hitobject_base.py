@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 from ...utils.bezier import Bezier
-from ...utils.misc import triangle, intersect, lerp, dist, value_to_percent
+from ...utils.misc import triangle, intersect, lerp, dist, value_to_percent, binary_search
 
 from ..hitobject import Hitobject
 
@@ -22,6 +22,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # The rough generated slider curve
         self.gen_points = self.__process_curve_points(curve_type, curve_points, kargs['px_len'])
+        self.__calculate_length_sums()
         
         self.px_len       = kargs['px_len']
         self.repeats      = kargs['repeats']
@@ -53,7 +54,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     def time_to_pos(self, time):
-        return self.__idx_to_pos(self.__percent_to_idx(value_to_percent(self.start_time(), self.end_time(), time)))
+        return self.__percent_to_pos(value_to_percent(self.start_time(), self.end_time(), time))
 
 
     # TODO: make sure this is correct
@@ -62,25 +63,20 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return self.repeats * self.px_len / (self.end_time() - self.start_time())
 
 
-    def __idx_to_pos(self, idx):
-        if idx > len(self.gen_points) - 2:
-            return self.gen_points[-1]
+    def __percent_to_pos(self, percent):
+        if percent < 0.0: return self.gen_points[0]
+        if percent > 1.0: return self.gen_points[-1]
 
-        percent_point = float(int(idx)) - idx
-        x_pos = lerp(self.gen_points[idx][0], self.gen_points[idx + 1][0], percent_point)
-        y_pos = lerp(self.gen_points[idx][1], self.gen_points[idx + 1][1], percent_point)
+        distance = self.px_len * triangle(percent * self.repeats, 2)
+        i = binary_search(self.length_sums, distance)
+        if i == 0: return self.gen_points[0]
+        if i == len(self.gen_points): return self.gen_points[-1]
 
-        return x_pos, y_pos
+        if abs(self.length_sums[i] - self.length_sums[i - 1]) < 0.01:
+            return self.gen_points[i]
 
-
-    def __percent_to_idx(self, percent):
-        if percent < 0.0: return 0
-        if percent > 1.0: return -1 if self.repeats == 0 else 0
-
-        idx = percent*len(self.gen_points)
-        idx_pos = triangle(idx*self.repeats, (2 * len(self.gen_points)) - 1)
-        
-        return int(idx_pos)
+        portion = value_to_percent(self.length_sums[i - 1], self.length_sums[i], distance)
+        return list(map(lerp, self.gen_points[i - 1], self.gen_points[i], [ portion, portion ]))
 
 
     def __process_slider_data(self, sdata):
@@ -117,6 +113,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR2:
             return self.__make_linear(curve_points)
+
+
+    def __calculate_length_sums(self):
+        self.length_sums = [ 0 ]
+        for i in range(len(self.gen_points) - 1):
+            distance = dist(self.gen_points[i], self.gen_points[i + 1])
+            self.length_sums.append(self.length_sums[-1] + distance)
 
 
     def __make_linear(self, curve_points):

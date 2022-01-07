@@ -22,6 +22,20 @@ def bound(min_val, max_val, value):
     return min(max(value, min_val), max_val)
     
 
+def binary_search(values, value):
+    low = 0
+    high = len(values)
+    while low < high:
+        mid = (low + high) // 2
+        if values[mid] < value:
+            low = mid + 1
+        elif values[mid] > value:
+            high = mid
+        else:
+            return mid
+    return low
+
+
 def value_to_percent(min_val, max_val, value):
     return 1.0 - ((max_val - bound(min_val, value, max_val)) / (max_val - min_val))
 
