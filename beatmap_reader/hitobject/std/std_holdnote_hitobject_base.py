@@ -148,8 +148,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
             p1, p2 = self.gen_points[-2:]
             ratio = (px_len - self.length_sums[-2]) / (self.length_sums[-1] - self.length_sums[-2])
-            self.gen_points[-1][0] = p2[0] + lerp(p1[0], p2[0], ratio)
-            self.gen_points[-1][1] = p2[1] + lerp(p1[1], p2[1], ratio)
+            self.gen_points[-1] = list(map(lerp, p1, p2, [ ratio, ratio ]))
 
 
     def __make_linear(self, curve_points):
