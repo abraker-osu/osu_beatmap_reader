@@ -24,7 +24,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         self.gen_points = self.__process_curve_points(curve_type, curve_points, kargs['px_len'])
 
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L283-L284
-        extend = len(curve_points) > 2 and curve_points[-1] == curve_points[-2]
+        extend = len(curve_points) >= 2 and curve_points[-1] != curve_points[-2]
         self.__calculate_length_sums(kargs['px_len'], extend)
         
         self.px_len       = kargs['px_len']
@@ -78,8 +78,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def __time_to_dist(self, time):
         percent = value_to_percent(self.start_time(), self.end_time(), time)
-        if percent < 0.0: return self.gen_points[0]
-        if percent > 1.0: return self.gen_points[-1]
+        if percent < 0.0: return 0
+        if percent > 1.0: return self.px_len
 
         return self.px_len * triangle(percent * self.repeats, 2)
 
@@ -89,6 +89,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         if i == 0: return self.gen_points[0]
         if i == len(self.gen_points): return self.gen_points[-1]
 
+        # avoid division by zero (pixel units, so 0.01 is small)
         if abs(self.length_sums[i] - self.length_sums[i - 1]) < 0.01:
             return self.gen_points[i]
 
@@ -144,7 +145,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
             self.gen_points.pop()
 
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
-        if extend and len(self.gen_points) >= 2:
+        if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
             p1, p2 = self.gen_points[-2:]
             ratio = (px_len - self.length_sums[-2]) / (self.length_sums[-1] - self.length_sums[-2])
             self.gen_points[-1][0] = p2[0] + lerp(p1[0], p2[0], ratio)
