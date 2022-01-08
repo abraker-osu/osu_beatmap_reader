@@ -79,16 +79,24 @@ class TestBeatmap(unittest.TestCase):
         self.assertEqual(beatmap.hitobjects[23].hdata[Hitobject.HDATA_POSY], 116)
         self.assertEqual(beatmap.hitobjects[23].repeats, 2)
         self.assertEqual(len(beatmap.hitobjects[23].tdata), 5)
+        # head
+        self.assertEqual(beatmap.hitobjects[23].tdata[0][Hitobject.TDATA_T], 28399)
+        self.assertEqual(beatmap.hitobjects[23].tdata[0][Hitobject.TDATA_X], 172)
+        self.assertEqual(beatmap.hitobjects[23].tdata[0][Hitobject.TDATA_Y], 116)
         # tick
+        self.assertAlmostEqual(beatmap.hitobjects[23].tdata[1][Hitobject.TDATA_T], 28699, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[1][Hitobject.TDATA_X], 207, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[1][Hitobject.TDATA_Y], 48, places=0)
         # repeat
+        self.assertAlmostEqual(beatmap.hitobjects[23].tdata[2][Hitobject.TDATA_T], 28849, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[2][Hitobject.TDATA_X], 241, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[2][Hitobject.TDATA_Y], 28, places=0)
         # tick
+        self.assertAlmostEqual(beatmap.hitobjects[23].tdata[3][Hitobject.TDATA_T], 28999, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[3][Hitobject.TDATA_X], 207, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[3][Hitobject.TDATA_Y], 48, places=0)
         # end
+        self.assertAlmostEqual(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_T], 29263, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_X], 175, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_Y], 107, places=0)
 
@@ -97,6 +105,33 @@ class TestBeatmap(unittest.TestCase):
 
     def test_beatmap_loading_weird(self):
         beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\DJ Noriken - Stargazer feat. YUC\'e (PSYQUI Remix) (Hishiro Chizuru) [Starg-Azer isn\'t so great Are you kidding me].osu')
+
+        first_circle = beatmap.hitobjects[0]
+        self.assertTrue(first_circle.is_htype(Hitobject.SLIDER))
+        self.assertEqual(len(first_circle.tdata), 6)  # head + 4 ticks + end
+        self.assertEqual(first_circle.hdata[Hitobject.HDATA_TSRT], 343)
+        self.assertEqual(first_circle.hdata[Hitobject.HDATA_POSX], 168)
+        self.assertEqual(first_circle.hdata[Hitobject.HDATA_POSY], 83)
+        # tick 1
+        self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_T], 700, places=0)
+        self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_X], 114, places=0)
+        self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_Y], 216, places=0)
+        # tick 4
+        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_T], 1771, places=0)
+        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_X], 397, places=0)
+        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_Y], 176, places=0)
+        # end
+        self.assertAlmostEqual(first_circle.tdata[5][Hitobject.TDATA_T], 2003, places=0)
+        self.assertAlmostEqual(first_circle.tdata[5][Hitobject.TDATA_X], 352, places=0)
+        self.assertAlmostEqual(first_circle.tdata[5][Hitobject.TDATA_Y], 91, places=0)
+
+        distorted = next(h for h in beatmap.hitobjects if h.start_time() == 85699)
+        self.assertEqual(distorted.hdata[Hitobject.HDATA_POSX], 360)
+        self.assertEqual(distorted.hdata[Hitobject.HDATA_POSY], 272)
+        self.assertEqual(len(distorted.tdata), 1)
+        self.assertEqual(distorted.tdata[0][Hitobject.TDATA_T], 85699)
+        self.assertEqual(distorted.tdata[0][Hitobject.TDATA_X], 360)
+        self.assertEqual(distorted.tdata[0][Hitobject.TDATA_Y], 272)
 
 
     def test_beatmap_loading_custom(self):
