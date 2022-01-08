@@ -194,57 +194,49 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     def __make_circumscribed(self, curve_points, px_len):
-        gen_points = []
-
-        # construct the three points
+        # use np.array for pointwise arithmetic
         start = np.asarray(curve_points[0])
         mid   = np.asarray(curve_points[1])
         end   = np.asarray(curve_points[2])
 
+        # fallback to bezier in degenerate cases
+        # https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs#L324
+        if abs((mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])) < 0.01:
+            return self.__make_bezier(curve_points)
+
+        def rot90acw(p):
+            return np.asarray([ -p[1], p[0] ])
+
         # find the circle center
-        mida = (start + mid)/2   # midpoint
-        midb = (end + mid)/2     # midpoint
-        nora = np.asarray([ start[1] - mid[1], mid[0] - start[0] ])   # This is turning it into (-y, x)
-        norb = np.asarray([ end[1]   - mid[1], mid[0] - end[0] ])
-        
-        circle_center = intersect(mida, nora, midb, norb)
-        if type(circle_center) == type(None):
+        mida = (start + mid)/2
+        midb = (end + mid)/2
+        nora = rot90acw(mid - start)
+        norb = rot90acw(mid - end)
+        center = intersect(mida, nora, midb, norb)
+        if center is None:  # should be impossible after degeneracy check
             print('WARN[beatmap_reader]: circle center not found')
-            return gen_points
+            return self.__make_bezier(curve_points)
 
-        start_angle_point = start - circle_center
-        mid_angle_point   = mid - circle_center
-        end_angle_point   = end - circle_center
+        # find the orientation
+        angle_sign = np.sign(np.dot(rot90acw(end - start), start - mid))
+        if angle_sign == 0:  # should be impossible after degeneracy check
+            print('WARN[beatmap_reader]: uncaught degenerate circle')
+            return self.__make_linear([ start, end ])  # mid must be collinear
 
-        start_angle = math.atan2(start_angle_point[1], start_angle_point[0])  # It's math.atan2(y, x)
-        mid_angle   = math.atan2(mid_angle_point[1], mid_angle_point[0])
-        end_angle   = math.atan2(end_angle_point[1], end_angle_point[0])
+        # find the exact angle range
+        relative_start = start - center
+        start_angle = math.atan2(relative_start[1], relative_start[0])
+        radius = np.linalg.norm(relative_start)
+        angle_size = px_len / radius
+        angle_delta = angle_sign * angle_size
 
-        if not start_angle < mid_angle < end_angle:
-            if abs(start_angle + 2*math.pi - end_angle) < 2*math.pi and (start_angle + 2*math.pi < mid_angle < end_angle):
-                start_angle += 2*math.pi
-            elif abs(start_angle - (end_angle + 2*math.pi)) < 2*math.pi and (start_angle < mid_angle < end_angle + 2*math.pi):
-                end_angle += 2*math.pi
-            elif abs(start_angle - 2*math.pi - end_angle) < 2*math.pi and (start_angle - 2*math.pi < mid_angle < end_angle):
-                start_angle -= 2*math.pi
-            elif abs(start_angle - (end_angle - 2*math.pi)) < 2*math.pi and (start_angle < mid_angle < end_angle - 2*math.pi):
-                end_angle -= 2*math.pi   
-            else:
-                print('WARN[beatmap_reader]: cannot find angles between mid_angle')
-                return gen_points
+        # calculate points
+        steps = int(px_len / 5)  # 5 = CURVE_POINTS_SEPARATION
+        step = angle_delta / steps
 
-        # find an angle with an arc length of pixelLength along this circle
-        radius = dist(start_angle_point, [ 0, 0 ])
-        arc_angle = px_len / radius                                                                  # len = theta * r / theta = len / r
-        end_angle = start_angle + arc_angle if end_angle > start_angle else start_angle - arc_angle  # now use it for our new end angle
+        def get_point(i):
+            angle = start_angle + i * step
+            unit = np.asarray([ math.cos(angle), math.sin(angle) ])
+            return radius * unit + center
 
-        # Calculate points
-        step = px_len / 5  # 5 = CURVE_POINTS_SEPERATION
-        len = int(step) + 1
-
-        for i in range(len):
-            ang = lerp(start_angle, end_angle, i/step)
-            xy  = [ math.cos(ang)*radius + circle_center[0], math.sin(ang)*radius + circle_center[1] ]
-            gen_points.append(xy)
-        
-        return gen_points
+        return [ get_point(i) for i in range(steps + 1) ]
