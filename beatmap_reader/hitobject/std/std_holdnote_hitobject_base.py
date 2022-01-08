@@ -58,13 +58,9 @@ class StdHoldNoteHitobjectBase(Hitobject):
             return
 
         # The rough generated slider curve
-        self.gen_points = StdHoldNoteHitobjectBase.__process_curve_points(
-            self.curve_type, self.curve_points
-        )
+        self.gen_points = StdHoldNoteHitobjectBase.__process_curve_points(self.curve_type, self.curve_points)
         self.length_sums = StdHoldNoteHitobjectBase.__get_length_sums(self.gen_points)
-        StdHoldNoteHitobjectBase.__process_curve_length(
-            self.gen_points, self.length_sums, self.px_len, self.curve_points
-        )
+        self.__process_curve_length()
 
         velocity = kargs['velocity']
         ms_per_beat = kargs['beat_length'] / kargs['tick_rate']
@@ -151,41 +147,41 @@ class StdHoldNoteHitobjectBase(Hitobject):
             print('WARN[beatmap_reader]: found catmull, treating as linear')
             return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
+        print(f'WARN[beatmap_reader]: unrecognized curve type {curve_type}')
+        return []
+
 
     @staticmethod
     def __get_length_sums(gen_points):
-        length_sums = [ 0 ]
-        for i in range(len(gen_points) - 1):
-            distance = dist(gen_points[i], gen_points[i + 1])
-            length_sums.append(length_sums[-1] + distance)
-        return length_sums
+        diffs = np.subtract(gen_points[1:], gen_points[:-1])
+        length_sums = np.cumsum(np.sqrt(np.einsum('...i,...i', diffs, diffs)))
+        return np.concatenate(([ 0 ], length_sums))
 
 
-    @staticmethod
-    def __process_curve_length(gen_points, length_sums, px_len, anchors):
+    def __process_curve_length(self):
         """
         Truncates and extends the curve to match the given length, and updates
         the length sums correspondingly.
         """
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
-        while length_sums[-1] > px_len:
-            length_sums.pop()
-            gen_points.pop()
+        while self.length_sums[-1] > self.px_len:
+            self.length_sums = self.length_sums[:-1]
+            self.gen_points = self.gen_points[:-1]
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L284
-        extend = len(anchors) >= 2 and anchors[-1] != anchors[-2]
+        extend = len(self.curve_points) >= 2 and self.curve_points[-1] != self.curve_points[-2]
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
-        if extend and len(gen_points) >= 2 and length_sums[-1] < px_len:
+        if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < self.px_len:
             i = 2
             # our curve generation can output repeated points, skip them
-            while length_sums[-1] - length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
-                if i == len(gen_points):
+            while self.length_sums[-1] - self.length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
+                if i == len(self.gen_points):
                     print('WARN[beatmap_reader]: slider extension failed (too short)')
                     return
                 i += 1
-            ratio = (px_len - length_sums[-i]) / (length_sums[-1] - length_sums[-i])
-            gen_points[-1] = list(map(lerp, gen_points[-i], gen_points[-1], [ ratio, ratio ]))
-            length_sums[-1] = px_len
+            ratio = (self.px_len - self.length_sums[-i]) / (self.length_sums[-1] - self.length_sums[-i])
+            self.gen_points[-1] = list(map(lerp, self.gen_points[-i], self.gen_points[-1], [ ratio, ratio ]))
+            self.length_sums[-1] = self.px_len
 
 
     @staticmethod
