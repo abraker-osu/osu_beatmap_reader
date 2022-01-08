@@ -9,6 +9,7 @@ from ..hitobject import Hitobject
 
 
 class StdHoldNoteHitobjectBase(Hitobject):
+    LINEAR_SUBDIVISIONS = 5
 
     PRECISION_THRESHOLD_PX = 0.01
 
@@ -186,15 +187,11 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     @staticmethod
     def __make_linear(curve_points):
-        gen_points = []
-
-        # Lines: generate a new curve for each sequential pair
-        # ab  bc  cd  de  ef  fg
-        for i in range(len(curve_points) - 1):
-            bezier = Bezier([ curve_points[i], curve_points[i + 1] ])
-            gen_points.extend(bezier.curve_points)
-            
-        return gen_points
+        # __dist_to_pos lerps already, but subdivide so that truncation works
+        return np.concatenate([
+            np.linspace(curr, nxt, StdHoldNoteHitobjectBase.LINEAR_SUBDIVISIONS)
+            for curr, nxt in zip(curve_points, curve_points[1:])
+        ])
 
 
     @staticmethod
