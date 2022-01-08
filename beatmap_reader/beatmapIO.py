@@ -495,9 +495,11 @@ class BeatmapIO():
                     continue
 
                 # Find the last timing that occurs before (or when) the hitobject starts
-                applies = lambda i: beatmap.timing_points[i].offset <= hitobject.start_time()
-                for t_idx in filter(applies, range(t_idx, len(beatmap.timing_points))):
-                    pass
+                for i in range(t_idx + 1, len(beatmap.timing_points)):
+                    if beatmap.timing_points[i].offset <= hitobject.start_time():
+                        t_idx = i
+                    else:
+                        break
                 timing_point = beatmap.timing_points[t_idx]
 
                 to_repeat_time = round(((-600.0/timing_point.bpm) * hitobject.px_len * timing_point.slider_multiplier) / (100.0 * beatmap.difficulty.sm))
