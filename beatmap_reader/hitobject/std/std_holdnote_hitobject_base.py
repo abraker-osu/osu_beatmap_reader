@@ -135,6 +135,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
             return self.__make_linear(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR2:
+            print('WARN[beatmap_reader]: found catmull, treating as linear')
             return self.__make_linear(curve_points)
 
 
@@ -153,7 +154,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
             i = next(i for i in range(2, len(self.gen_points) + 1) if self.length_sums[-1] - self.length_sums[-i] > 0.01)
             if i is None:
-                print("slider extension failed (too short)")
+                print('WARN[beatmap_reader]: slider extension failed (too short)')
                 return
             ratio = (px_len - self.length_sums[-i]) / (self.length_sums[-1] - self.length_sums[-i])
             self.gen_points[-1] = list(map(lerp, self.gen_points[-i], self.gen_points[-1], [ ratio, ratio ]))
@@ -208,6 +209,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         
         circle_center = intersect(mida, nora, midb, norb)
         if type(circle_center) == type(None):
+            print('WARN[beatmap_reader]: circle center not found')
             return gen_points
 
         start_angle_point = start - circle_center
@@ -228,7 +230,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
             elif abs(start_angle - (end_angle - 2*math.pi)) < 2*math.pi and (start_angle < mid_angle < end_angle - 2*math.pi):
                 end_angle -= 2*math.pi   
             else:
-                print('Cannot find angles between mid_angle')
+                print('WARN[beatmap_reader]: cannot find angles between mid_angle')
                 return gen_points
 
         # find an angle with an arc length of pixelLength along this circle
