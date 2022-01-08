@@ -95,5 +95,9 @@ class TestBeatmap(unittest.TestCase):
         # TODO: test more sliders
 
 
+    def test_beatmap_loading_weird(self):
+        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\DJ Noriken - Stargazer feat. YUC\'e (PSYQUI Remix) (Hishiro Chizuru) [Starg-Azer isn\'t so great Are you kidding me].osu')
+
+
     def test_beatmap_loading_custom(self):
         beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\abraker - unknown (abraker) [250ms].osu')
