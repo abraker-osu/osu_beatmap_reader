@@ -487,20 +487,18 @@ class BeatmapIO():
 
     @staticmethod
     def __postprocess_hitobjects(beatmap):
+        t_idx = 0
         for hitobject in beatmap.hitobjects:
             if beatmap.gamemode == Gamemode.OSU or beatmap.gamemode == None:
                 if not hitobject.is_htype(Hitobject.SLIDER):
                     hitobject.generate_tick_data()
                     continue
 
-                # Find the last timing that occurs before the hitobject starts
-                prev = None
-                for timing_point in beatmap.timing_points:
-                    if timing_point.offset > hitobject.start_time():
-                        break
-                    prev = timing_point
-                assert prev, "hitobject before red line"
-                timing_point = prev
+                # Find the last timing that occurs before (or when) the hitobject starts
+                applies = lambda i: beatmap.timing_points[i].offset <= hitobject.start_time()
+                for t_idx in filter(applies, range(t_idx, len(beatmap.timing_points))):
+                    pass
+                timing_point = beatmap.timing_points[t_idx]
 
                 to_repeat_time = round(((-600.0/timing_point.bpm) * hitobject.px_len * timing_point.slider_multiplier) / (100.0 * beatmap.difficulty.sm))
                 end_time = hitobject.start_time() + to_repeat_time*hitobject.repeats
