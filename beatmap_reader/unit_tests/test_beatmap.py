@@ -106,24 +106,24 @@ class TestBeatmap(unittest.TestCase):
     def test_beatmap_loading_weird(self):
         beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\DJ Noriken - Stargazer feat. YUC\'e (PSYQUI Remix) (Hishiro Chizuru) [Starg-Azer isn\'t so great Are you kidding me].osu')
 
-        first_circle = beatmap.hitobjects[0]
-        self.assertTrue(first_circle.is_htype(Hitobject.SLIDER))
-        self.assertEqual(len(first_circle.tdata), 6)  # head + 4 ticks + end
-        self.assertEqual(first_circle.hdata[Hitobject.HDATA_TSRT], 343)
-        self.assertEqual(first_circle.hdata[Hitobject.HDATA_POSX], 168)
-        self.assertEqual(first_circle.hdata[Hitobject.HDATA_POSY], 83)
+        circular = beatmap.hitobjects[0]
+        self.assertTrue(circular.is_htype(Hitobject.SLIDER))
+        self.assertEqual(len(circular.tdata), 6)  # head + 4 ticks + end
+        self.assertEqual(circular.hdata[Hitobject.HDATA_TSRT], 343)
+        self.assertEqual(circular.hdata[Hitobject.HDATA_POSX], 168)
+        self.assertEqual(circular.hdata[Hitobject.HDATA_POSY], 83)
         # tick 1
-        self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_T], 700, places=0)
-        self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_X], 114, places=0)
-        self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_Y], 216, places=0)
+        self.assertAlmostEqual(circular.tdata[1][Hitobject.TDATA_T], 700, places=0)
+        self.assertAlmostEqual(circular.tdata[1][Hitobject.TDATA_X], 114, places=0)
+        self.assertAlmostEqual(circular.tdata[1][Hitobject.TDATA_Y], 216, places=0)
         # tick 4
-        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_T], 1772, places=0)
-        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_X], 397, places=0)
-        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_Y], 176, places=0)
+        self.assertAlmostEqual(circular.tdata[4][Hitobject.TDATA_T], 1772, places=0)
+        self.assertAlmostEqual(circular.tdata[4][Hitobject.TDATA_X], 397, places=0)
+        self.assertAlmostEqual(circular.tdata[4][Hitobject.TDATA_Y], 176, places=0)
         # end
-        self.assertAlmostEqual(first_circle.tdata[5][Hitobject.TDATA_T], 2003, places=0)
-        self.assertAlmostEqual(first_circle.tdata[5][Hitobject.TDATA_X], 352, places=0)
-        self.assertAlmostEqual(first_circle.tdata[5][Hitobject.TDATA_Y], 91, places=0)
+        self.assertAlmostEqual(circular.tdata[5][Hitobject.TDATA_T], 2003, places=0)
+        self.assertAlmostEqual(circular.tdata[5][Hitobject.TDATA_X], 352, places=0)
+        self.assertAlmostEqual(circular.tdata[5][Hitobject.TDATA_Y], 91, places=0)
 
         distorted = next(h for h in beatmap.hitobjects if h.start_time() == 85699)
         self.assertEqual(distorted.hdata[Hitobject.HDATA_POSX], 360)
