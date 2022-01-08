@@ -20,6 +20,13 @@ def bernstein(i, n, t):
 
 def bound(min_val, max_val, value):
     return min(max(value, min_val), max_val)
+
+
+def frange(start, stop, step):
+    curr = start
+    while curr < stop:
+        yield curr
+        curr += step
     
 
 def binary_search(values, value):

@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 from ...utils.bezier import Bezier
-from ...utils.misc import triangle, intersect, lerp, dist, value_to_percent, binary_search
+from ...utils.misc import triangle, intersect, lerp, dist, value_to_percent, binary_search, frange
 
 from ..hitobject import Hitobject
 
@@ -44,7 +44,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         ms_per_beat = kargs['beat_length'] / kargs['tick_rate']
         ms_per_repeat = self.px_len / velocity
 
-        tick_times = list(np.arange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
+        tick_times = list(frange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
         while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > self.px_len - 10 * velocity:
             tick_times.pop()
