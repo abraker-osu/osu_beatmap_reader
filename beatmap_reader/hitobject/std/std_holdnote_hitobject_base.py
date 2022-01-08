@@ -196,7 +196,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         # ab  bc  cd  de  ef  fg
         for i in range(len(curve_points) - 1):
             bezier = Bezier([ curve_points[i], curve_points[i + 1] ])
-            gen_points += bezier.curve_points
+            gen_points.extend(bezier.curve_points)
             
         return gen_points
 
@@ -217,7 +217,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
             # If we reached a red point or the end of the point list, then segment the bezier
             if segment_bezier:
-                gen_points += Bezier(point_section).curve_points
+                gen_points.extend(Bezier(point_section).curve_points)
                 point_section = []
 
         return gen_points
