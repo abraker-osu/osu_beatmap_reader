@@ -494,9 +494,13 @@ class BeatmapIO():
                     continue
 
                 # Find the last timing that occurs before the hitobject starts
+                prev = None
                 for timing_point in beatmap.timing_points:
                     if timing_point.offset > hitobject.start_time():
                         break
+                    prev = timing_point
+                assert prev, "hitobject before red line"
+                timing_point = prev
 
                 to_repeat_time = round(((-600.0/timing_point.bpm) * hitobject.px_len * timing_point.slider_multiplier) / (100.0 * beatmap.difficulty.sm))
                 end_time = hitobject.start_time() + to_repeat_time*hitobject.repeats
