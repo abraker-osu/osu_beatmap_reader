@@ -40,9 +40,9 @@ class StdHoldNoteHitobjectBase(Hitobject):
             self.tdata.append([ *pos, self.start_time() ])
             return
 
-        velocity = self.get_velocity()
-        ms_per_beat = (100.0 * kargs['sm'])/(velocity * kargs['st'])
-        ms_per_repeat = (self.end_time() - self.start_time()) / self.repeats
+        velocity = kargs['velocity']
+        ms_per_beat = kargs['beat_length'] / kargs['tick_rate']
+        ms_per_repeat = self.px_len / velocity
 
         tick_times = list(np.arange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
@@ -73,12 +73,6 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def time_to_pos(self, time):
         return self.__dist_to_pos(self.__time_to_dist(time))
-
-
-    # TODO: make sure this is correct
-    # TODO: test a slider 200px across with various repeat times and tick spacings
-    def get_velocity(self):
-        return self.repeats * self.px_len / (self.end_time() - self.start_time())
 
 
     def __time_to_dist(self, time):

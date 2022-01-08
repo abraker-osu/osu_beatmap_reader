@@ -117,7 +117,7 @@ class TestBeatmap(unittest.TestCase):
         self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_X], 114, places=0)
         self.assertAlmostEqual(first_circle.tdata[1][Hitobject.TDATA_Y], 216, places=0)
         # tick 4
-        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_T], 1771, places=0)
+        self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_T], 1772, places=0)
         self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_X], 397, places=0)
         self.assertAlmostEqual(first_circle.tdata[4][Hitobject.TDATA_Y], 176, places=0)
         # end

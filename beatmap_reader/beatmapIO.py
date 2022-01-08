@@ -502,11 +502,11 @@ class BeatmapIO():
                         break
                 timing_point = beatmap.timing_points[t_idx]
 
-                sm = (-100/timing_point.slider_multiplier) * beatmap.difficulty.sm
-                to_repeat_time = round(((600.0/timing_point.bpm) * hitobject.px_len) / sm)
-                end_time = hitobject.start_time() + to_repeat_time*hitobject.repeats
+                beat_length = timing_point.beat_length
+                velocity = (100/beat_length) * (-100/timing_point.slider_multiplier) * beatmap.difficulty.sm
+                end_time = hitobject.start_time() + hitobject.repeats * hitobject.px_len / velocity
 
-                hitobject.generate_tick_data(end_time=end_time, sm=sm, st=beatmap.difficulty.st)
+                hitobject.generate_tick_data(end_time=end_time, velocity=velocity, beat_length=timing_point.beat_length, tick_rate=beatmap.difficulty.st)
 
             else:
                 hitobject.generate_tick_data()
