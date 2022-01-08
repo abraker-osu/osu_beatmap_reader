@@ -35,6 +35,11 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def generate_tick_data(self, **kargs):
         self.hdata[Hitobject.HDATA_TEND] = kargs['end_time']
+        if self.end_time() == self.start_time():
+            pos = self.hdata[Hitobject.HDATA_POSX], self.hdata[Hitobject.HDATA_POSY]
+            self.tdata.append([ *pos, self.start_time() ])
+            return
+
         velocity = self.get_velocity()
         ms_per_beat = (100.0 * kargs['sm'])/(velocity * kargs['st'])
         ms_per_repeat = (self.end_time() - self.start_time()) / self.repeats
