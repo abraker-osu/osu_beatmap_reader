@@ -41,15 +41,9 @@ class StdHoldNoteHitobjectBase(Hitobject):
         Hitobject.__init__(self, **kargs)
 
         curve_type, curve_points = self.__process_slider_data(kargs['sdata'])
-
-        # The rough generated slider curve
-        gen_points = StdHoldNoteHitobjectBase.__process_curve_points(curve_type, curve_points)
-        length_sums = StdHoldNoteHitobjectBase.__get_length_sums(gen_points)
-
-        StdHoldNoteHitobjectBase.__process_curve_length(gen_points, length_sums, kargs['px_len'], curve_points)
         
-        self.gen_points = gen_points
-        self.length_sums = length_sums
+        self.gen_points = []
+        self.length_sums = []
         self.px_len       = kargs['px_len']
         self.repeats      = kargs['repeats']
         self.curve_type   = curve_type
@@ -62,6 +56,15 @@ class StdHoldNoteHitobjectBase(Hitobject):
             pos = self.hdata[Hitobject.HDATA_POSX], self.hdata[Hitobject.HDATA_POSY]
             self.tdata.append([ *pos, self.start_time() ])
             return
+
+        # The rough generated slider curve
+        self.gen_points = StdHoldNoteHitobjectBase.__process_curve_points(
+            self.curve_type, self.curve_points
+        )
+        self.length_sums = StdHoldNoteHitobjectBase.__get_length_sums(self.gen_points)
+        StdHoldNoteHitobjectBase.__process_curve_length(
+            self.gen_points, self.length_sums, self.px_len, self.curve_points
+        )
 
         velocity = kargs['velocity']
         ms_per_beat = kargs['beat_length'] / kargs['tick_rate']
