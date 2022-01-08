@@ -111,18 +111,12 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     
     def __process_curve_points(self, curve_type, curve_points, px_len):
-        gen_points  = []
-        
         if curve_type == StdHoldNoteHitobjectBase.BEZIER:
             return self.__make_bezier(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.CIRCUMSCRIBED:
             if len(curve_points) == 3:
-                gen_points = self.__make_circumscribed(curve_points, px_len)
-                if len(gen_points) == 0:
-                    return self.__make_bezier(curve_points)
-                return gen_points
-            
+                return self.__make_circumscribed(curve_points, px_len)
             return self.__make_bezier(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR1:
