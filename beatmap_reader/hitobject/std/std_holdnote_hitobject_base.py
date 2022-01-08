@@ -146,10 +146,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
         if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
-            i = next(i for i in range(2, len(self.gen_points) + 1) if self.length_sums[-1] - self.length_sums[-i] > 0.01)
-            if i is None:
-                print('WARN[beatmap_reader]: slider extension failed (too short)')
-                return
+            i = 2
+            # our curve generation can output repeated points, skip them
+            while self.length_sums[-1] - self.length_sums[-i] < 0.01:
+                if i == len(self.gen_points):
+                    print('WARN[beatmap_reader]: slider extension failed (too short)')
+                    return
+                i += 1
             ratio = (px_len - self.length_sums[-i]) / (self.length_sums[-1] - self.length_sums[-i])
             self.gen_points[-1] = list(map(lerp, self.gen_points[-i], self.gen_points[-1], [ ratio, ratio ]))
 
