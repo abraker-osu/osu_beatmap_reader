@@ -64,9 +64,9 @@ def dist(a, b):
     return (dx*dx + dy*dy)**0.5
 
 
-def intersect(a, ta, b, tb):
+def intersect(a, ta, b, tb, precision):
     des = tb[0]*ta[1] - tb[1]*ta[0]
-    if abs(des) < 0.00001: return None
+    if abs(des) < precision: return None
 
     u = ((b[1] - a[1])*ta[0] + (a[0] - b[0])*ta[1]) / des
     return b + tb*u

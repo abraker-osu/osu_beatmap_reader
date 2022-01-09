@@ -10,6 +10,28 @@ from ..hitobject import Hitobject
 
 class StdHoldNoteHitobjectBase(Hitobject):
 
+    PRECISION_THRESHOLD_PX = 0.01
+
+    ARC_PARALLEL_THRESHOLD = 0.00001
+
+    CURVE_POINTS_SEPARATION = 5
+
+    TICK_CUTOFF_MS = 10
+    """
+    Ticks closer to the end time of the slider than this are not generated.
+
+    Value: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
+    """
+
+    END_TICK_OFFSET_MS = 36
+    """
+    The tick for sliderend judgement is offset backwards in time by this amount
+    unless the slider is particularly short.
+
+    Value: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
+    Usage: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
+    """
+
     LINEAR1       = 'L'
     LINEAR2       = 'C'
     BEZIER        = 'B'
@@ -45,8 +67,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
         ms_per_repeat = self.px_len / velocity
 
         tick_times = list(frange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
-        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
-        while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > self.px_len - 10 * velocity:
+        cutoff_dist = self.px_len - StdHoldNoteHitobjectBase.TICK_CUTOFF_MS * velocity
+        while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > cutoff_dist:
             tick_times.pop()
         ticks = [ (self.time_to_pos(tick_time), tick_time - self.start_time()) for tick_time in tick_times ]
 
@@ -63,10 +85,11 @@ class StdHoldNoteHitobjectBase(Hitobject):
             else:
                 self.tdata.extend([ *pos, repeat_start_time + time ] for pos, time in ticks)
 
-        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
-        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
         midpoint_time = (self.start_time() + self.end_time()) / 2
-        end_tick_time = max(self.end_time() - 36, midpoint_time)
+        end_tick_time = max(
+            self.end_time() - StdHoldNoteHitobjectBase.END_TICK_OFFSET_MS,
+            midpoint_time
+        )
         x_pos, y_pos = self.time_to_pos(end_tick_time)
         self.tdata.append([ x_pos, y_pos, end_tick_time ])
 
@@ -88,8 +111,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
         if i == 0: return self.gen_points[0]
         if i == len(self.gen_points): return self.gen_points[-1]
 
-        # avoid division by zero (pixel units, so 0.01 is small)
-        if abs(self.length_sums[i] - self.length_sums[i - 1]) < 0.01:
+        # avoid division by zero
+        if abs(self.length_sums[i] - self.length_sums[i - 1]) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
             return self.gen_points[i]
 
         portion = value_to_percent(self.length_sums[i - 1], self.length_sums[i], distance)
@@ -142,7 +165,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
             i = 2
             # our curve generation can output repeated points, skip them
-            while self.length_sums[-1] - self.length_sums[-i] < 0.01:
+            while self.length_sums[-1] - self.length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
                 if i == len(self.gen_points):
                     print('WARN[beatmap_reader]: slider extension failed (too short)')
                     return
@@ -192,7 +215,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # fallback to bezier in degenerate cases
         # https://github.com/ppy/osu-framework/blob/050a0b8639c9bd723100288a53923547ce87d487/osu.Framework/Utils/PathApproximator.cs#L324
-        if abs((mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])) < 0.01:
+        outer = (mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])
+        if abs(outer) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
             return self.__make_bezier(curve_points)
 
         def rot90acw(p):
@@ -203,7 +227,10 @@ class StdHoldNoteHitobjectBase(Hitobject):
         midb = (end + mid)/2
         nora = rot90acw(mid - start)
         norb = rot90acw(mid - end)
-        center = intersect(mida, nora, midb, norb)
+        center = intersect(
+            mida, nora, midb, norb,
+            precision=StdHoldNoteHitobjectBase.ARC_PARALLEL_THRESHOLD
+        )
         if center is None:  # should be impossible after degeneracy check
             print('WARN[beatmap_reader]: circle center not found')
             return self.__make_bezier(curve_points)
@@ -222,7 +249,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         angle_delta = angle_sign * angle_size
 
         # calculate points
-        steps = int(px_len / 5)  # 5 = CURVE_POINTS_SEPARATION
+        steps = int(px_len / StdHoldNoteHitobjectBase.CURVE_POINTS_SEPARATION)
         step = angle_delta / steps
 
         def get_point(i):

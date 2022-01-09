@@ -5,6 +5,8 @@ from .misc import bernstein, dist
 
 class Bezier():
 
+    APPROX_LEVEL = 4
+
     def __init__(self, curve_points):
         self.curve_points    = []
         self.curve_distances = [ 0 ]
@@ -16,7 +18,7 @@ class Bezier():
             approx_length += dist(curve_points[i], curve_points[i + 1])
 
         # subdivide the curve
-        ncurve = int(approx_length / 4.0) + 2
+        ncurve = int(approx_length / Bezier.APPROX_LEVEL) + 2
         for i in range(ncurve):
             self.curve_points.append(Bezier.point_at(curve_points, float(i) / float(ncurve - 1)))
 
