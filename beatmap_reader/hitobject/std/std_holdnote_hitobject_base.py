@@ -23,7 +23,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         # The rough generated slider curve
         self.gen_points = self.__process_curve_points(curve_type, curve_points, kargs['px_len'])
 
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L283-L284
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L284
         extend = len(curve_points) >= 2 and curve_points[-1] != curve_points[-2]
         self.__calculate_length_sums(kargs['px_len'], extend)
         
@@ -45,12 +45,12 @@ class StdHoldNoteHitobjectBase(Hitobject):
         ms_per_repeat = self.px_len / velocity
 
         tick_times = list(frange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
         while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > self.px_len - 10 * velocity:
             tick_times.pop()
         ticks = [ (self.time_to_pos(tick_time), tick_time - self.start_time()) for tick_time in tick_times ]
 
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L115
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L118-L137
         for repeat in range(self.repeats):
             reverse = repeat % 2 == 1
 
@@ -63,8 +63,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
             else:
                 self.tdata.extend([ *pos, repeat_start_time + time ] for pos, time in ticks)
 
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
         midpoint_time = (self.start_time() + self.end_time()) / 2
         end_tick_time = max(self.end_time() - 36, midpoint_time)
         x_pos, y_pos = self.time_to_pos(end_tick_time)
@@ -133,12 +133,12 @@ class StdHoldNoteHitobjectBase(Hitobject):
             distance = dist(self.gen_points[i], self.gen_points[i + 1])
             self.length_sums.append(self.length_sums[-1] + distance)
 
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
         while self.length_sums[-1] > px_len:
             self.length_sums.pop()
             self.gen_points.pop()
 
-        # https://github.com/ppy/osu/blob/master/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
         if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
             i = 2
             # our curve generation can output repeated points, skip them
@@ -191,7 +191,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         end   = np.asarray(curve_points[2])
 
         # fallback to bezier in degenerate cases
-        # https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs#L324
+        # https://github.com/ppy/osu-framework/blob/050a0b8639c9bd723100288a53923547ce87d487/osu.Framework/Utils/PathApproximator.cs#L324
         if abs((mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])) < 0.01:
             return self.__make_bezier(curve_points)
 
