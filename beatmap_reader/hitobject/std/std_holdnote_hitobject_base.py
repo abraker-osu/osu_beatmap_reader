@@ -43,12 +43,15 @@ class StdHoldNoteHitobjectBase(Hitobject):
         curve_type, curve_points = self.__process_slider_data(kargs['sdata'])
 
         # The rough generated slider curve
-        self.gen_points = self.__process_curve_points(curve_type, curve_points, kargs['px_len'])
+        gen_points = StdHoldNoteHitobjectBase.__process_curve_points(curve_type, curve_points, kargs['px_len'])
+        length_sums = StdHoldNoteHitobjectBase.__calculate_length_sums(gen_points)
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L284
         extend = len(curve_points) >= 2 and curve_points[-1] != curve_points[-2]
-        self.__calculate_length_sums(kargs['px_len'], extend)
+        StdHoldNoteHitobjectBase.__snap_path_length(gen_points, length_sums, kargs['px_len'], extend)
         
+        self.gen_points = gen_points
+        self.length_sums = length_sums
         self.px_len       = kargs['px_len']
         self.repeats      = kargs['repeats']
         self.curve_type   = curve_type
@@ -133,48 +136,55 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return curve_type, curve_points
 
     
-    def __process_curve_points(self, curve_type, curve_points, px_len):
+    @staticmethod
+    def __process_curve_points(curve_type, curve_points, px_len):
         if curve_type == StdHoldNoteHitobjectBase.BEZIER:
-            return self.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.CIRCUMSCRIBED:
             if len(curve_points) == 3:
-                return self.__make_circumscribed(curve_points, px_len)
-            return self.__make_bezier(curve_points)
+                return StdHoldNoteHitobjectBase.__make_circumscribed(curve_points, px_len)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR1:
-            return self.__make_linear(curve_points)
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR2:
             print('WARN[beatmap_reader]: found catmull, treating as linear')
-            return self.__make_linear(curve_points)
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
 
-    def __calculate_length_sums(self, px_len, extend):
-        self.length_sums = [ 0 ]
-        for i in range(len(self.gen_points) - 1):
-            distance = dist(self.gen_points[i], self.gen_points[i + 1])
-            self.length_sums.append(self.length_sums[-1] + distance)
+    @staticmethod
+    def __calculate_length_sums(gen_points):
+        length_sums = [ 0 ]
+        for i in range(len(gen_points) - 1):
+            distance = dist(gen_points[i], gen_points[i + 1])
+            length_sums.append(length_sums[-1] + distance)
+        return length_sums
 
+
+    @staticmethod
+    def __snap_path_length(gen_points, length_sums, px_len, extend):
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
-        while self.length_sums[-1] > px_len:
-            self.length_sums.pop()
-            self.gen_points.pop()
+        while length_sums[-1] > px_len:
+            length_sums.pop()
+            gen_points.pop()
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
-        if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < px_len:
+        if extend and len(gen_points) >= 2 and length_sums[-1] < px_len:
             i = 2
             # our curve generation can output repeated points, skip them
-            while self.length_sums[-1] - self.length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
-                if i == len(self.gen_points):
+            while length_sums[-1] - length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
+                if i == len(gen_points):
                     print('WARN[beatmap_reader]: slider extension failed (too short)')
                     return
                 i += 1
-            ratio = (px_len - self.length_sums[-i]) / (self.length_sums[-1] - self.length_sums[-i])
-            self.gen_points[-1] = list(map(lerp, self.gen_points[-i], self.gen_points[-1], [ ratio, ratio ]))
+            ratio = (px_len - length_sums[-i]) / (length_sums[-1] - length_sums[-i])
+            gen_points[-1] = list(map(lerp, gen_points[-i], gen_points[-1], [ ratio, ratio ]))
 
 
-    def __make_linear(self, curve_points):
+    @staticmethod
+    def __make_linear(curve_points):
         gen_points = []
 
         # Lines: generate a new curve for each sequential pair
@@ -186,7 +196,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return gen_points
 
 
-    def __make_bezier(self, curve_points):
+    @staticmethod
+    def __make_bezier(curve_points):
         gen_points = []
 
         # Beziers: splits points into different Beziers if has the same points (red points)
@@ -207,7 +218,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return gen_points
 
 
-    def __make_circumscribed(self, curve_points, px_len):
+    @staticmethod
+    def __make_circumscribed(curve_points, px_len):
         # use np.array for pointwise arithmetic
         start = np.asarray(curve_points[0])
         mid   = np.asarray(curve_points[1])
@@ -217,7 +229,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         # https://github.com/ppy/osu-framework/blob/050a0b8639c9bd723100288a53923547ce87d487/osu.Framework/Utils/PathApproximator.cs#L324
         outer = (mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])
         if abs(outer) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
-            return self.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
 
         def rot90acw(p):
             return np.asarray([ -p[1], p[0] ])
@@ -233,13 +245,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
         )
         if center is None:  # should be impossible after degeneracy check
             print('WARN[beatmap_reader]: circle center not found')
-            return self.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
 
         # find the orientation
         angle_sign = np.sign(np.dot(rot90acw(end - start), start - mid))
         if angle_sign == 0:  # should be impossible after degeneracy check
             print('WARN[beatmap_reader]: uncaught degenerate circle')
-            return self.__make_linear([ start, end ])  # mid must be collinear
+            return StdHoldNoteHitobjectBase.__make_linear([ start, end ])  # mid must be collinear
 
         # find the exact angle range
         relative_start = start - center
