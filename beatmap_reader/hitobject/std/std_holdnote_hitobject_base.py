@@ -110,16 +110,16 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     def __dist_to_pos(self, distance):
-        i = binary_search(self.length_sums, distance)
-        if i == 0: return self.gen_points[0]
-        if i == len(self.gen_points): return self.gen_points[-1]
+        idx = binary_search(self.length_sums, distance)
+        if idx == 0: return self.gen_points[0]
+        if idx == len(self.gen_points): return self.gen_points[-1]
 
         # avoid division by zero
-        if abs(self.length_sums[i] - self.length_sums[i - 1]) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
-            return self.gen_points[i]
+        if abs(self.length_sums[idx] - self.length_sums[idx - 1]) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
+            return self.gen_points[idx]
 
-        portion = value_to_percent(self.length_sums[i - 1], self.length_sums[i], distance)
-        return list(map(lerp, self.gen_points[i - 1], self.gen_points[i], [ portion, portion ]))
+        portion = value_to_percent(self.length_sums[idx - 1], self.length_sums[idx], distance)
+        return list(map(lerp, self.gen_points[idx - 1], self.gen_points[idx], [ portion, portion ]))
 
 
     def __process_slider_data(self, sdata):
