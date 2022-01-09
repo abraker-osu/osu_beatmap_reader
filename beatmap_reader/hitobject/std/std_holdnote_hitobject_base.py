@@ -103,9 +103,6 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def __time_to_dist(self, time):
         percent = value_to_percent(self.start_time(), self.end_time(), time)
-        if percent < 0.0: return 0
-        if percent > 1.0: return self.px_len
-
         return self.px_len * triangle(percent * self.repeats, 2)
 
 
