@@ -104,7 +104,7 @@ class TestBeatmap(unittest.TestCase):
 
 
     def test_beatmap_loading_weird(self):
-        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\DJ Noriken - Stargazer feat. YUC\'e (PSYQUI Remix) (Hishiro Chizuru) [Starg-Azer isn\'t so great Are you kidding me].osu')
+        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\stargazer.osu')
 
         circular = beatmap.hitobjects[0]
         self.assertTrue(circular.is_htype(Hitobject.SLIDER))
