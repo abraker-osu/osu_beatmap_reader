@@ -77,13 +77,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L118-L137
         for repeat in range(self.repeats):
-            reverse = repeat % 2 == 1
+            is_reverse = repeat % 2 == 1
 
             repeat_start_time = self.start_time() + repeat * ms_per_repeat
-            x_pos, y_pos = self.gen_points[-1] if reverse else self.gen_points[0]
+            x_pos, y_pos = self.gen_points[-1] if is_reverse else self.gen_points[0]
             self.tdata.append([ x_pos, y_pos, repeat_start_time ])
 
-            if reverse:
+            if is_reverse:
                 self.tdata.extend([ *pos, repeat_start_time + (ms_per_repeat - time) ] for pos, time in reversed(ticks))
             else:
                 self.tdata.extend([ *pos, repeat_start_time + time ] for pos, time in ticks)
