@@ -44,7 +44,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # The rough generated slider curve
         gen_points = StdHoldNoteHitobjectBase.__process_curve_points(curve_type, curve_points, kargs['px_len'])
-        length_sums = StdHoldNoteHitobjectBase.__calculate_length_sums(gen_points)
+        length_sums = StdHoldNoteHitobjectBase.__get_length_sums(gen_points)
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L284
         extend = len(curve_points) >= 2 and curve_points[-1] != curve_points[-2]
@@ -152,7 +152,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     @staticmethod
-    def __calculate_length_sums(gen_points):
+    def __get_length_sums(gen_points):
         length_sums = [ 0 ]
         for i in range(len(gen_points) - 1):
             distance = dist(gen_points[i], gen_points[i + 1])
