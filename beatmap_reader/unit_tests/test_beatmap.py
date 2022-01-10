@@ -1,4 +1,5 @@
 import unittest
+import os
 
 from ..beatmapIO import BeatmapIO
 from ..hitobject.hitobject import Hitobject
@@ -7,7 +8,10 @@ from ..hitobject.hitobject import Hitobject
 class TestBeatmap(unittest.TestCase):
 
     def test_beatmap_loading_mania(self):
-        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\mania\\Camellia - GHOST (qqqant) [Collab PHANTASM [MX]].osu')
+        beatmap = BeatmapIO.open_beatmap(os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'mania', 'Camellia - GHOST (qqqant) [Collab PHANTASM [MX]].osu'
+        ))
         
         # Test metadata
         self.assertEqual(beatmap.metadata.beatmap_format, 14)
@@ -37,7 +41,10 @@ class TestBeatmap(unittest.TestCase):
 
 
     def test_beatmap_loading_std(self):
-        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\Mutsuhiko Izumi - Red Goose (nold_1702) [ERT Basic].osu')
+        beatmap = BeatmapIO.open_beatmap(os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'Mutsuhiko Izumi - Red Goose (nold_1702) [ERT Basic].osu'
+        ))
 
         # Test metadata
         self.assertEqual(beatmap.metadata.beatmap_format, 9)
@@ -104,7 +111,10 @@ class TestBeatmap(unittest.TestCase):
 
 
     def test_beatmap_loading_weird(self):
-        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\stargazer.osu')
+        beatmap = BeatmapIO.open_beatmap(os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'stargazer.osu'
+        ))
 
         circular = beatmap.hitobjects[0]
         self.assertTrue(circular.is_htype(Hitobject.SLIDER))
@@ -135,4 +145,7 @@ class TestBeatmap(unittest.TestCase):
 
 
     def test_beatmap_loading_custom(self):
-        beatmap = BeatmapIO.open_beatmap('beatmap_reader\\unit_tests\\maps\\osu\\abraker - unknown (abraker) [250ms].osu')
+        beatmap = BeatmapIO.open_beatmap(os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'abraker - unknown (abraker) [250ms].osu'
+        ))
