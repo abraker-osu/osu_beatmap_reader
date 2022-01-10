@@ -182,6 +182,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
                 i += 1
             ratio = (px_len - length_sums[-i]) / (length_sums[-1] - length_sums[-i])
             gen_points[-1] = list(map(lerp, gen_points[-i], gen_points[-1], [ ratio, ratio ]))
+            length_sums[-1] = px_len
 
 
     @staticmethod
