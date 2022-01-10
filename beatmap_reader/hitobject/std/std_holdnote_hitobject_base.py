@@ -46,7 +46,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         gen_points = StdHoldNoteHitobjectBase.__process_curve_points(curve_type, curve_points, kargs['px_len'])
         length_sums = StdHoldNoteHitobjectBase.__get_length_sums(gen_points)
 
-        StdHoldNoteHitobjectBase.__snap_path_length(gen_points, length_sums, kargs['px_len'], curve_points)
+        StdHoldNoteHitobjectBase.__process_curve_length(gen_points, length_sums, kargs['px_len'], curve_points)
         
         self.gen_points = gen_points
         self.length_sums = length_sums
@@ -159,7 +159,11 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     @staticmethod
-    def __snap_path_length(gen_points, length_sums, px_len, anchors):
+    def __process_curve_length(gen_points, length_sums, px_len, anchors):
+        """
+        Truncates and extends the curve to match the given length, and updates
+        the length sums correspondingly.
+        """
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
         while length_sums[-1] > px_len:
             length_sums.pop()
