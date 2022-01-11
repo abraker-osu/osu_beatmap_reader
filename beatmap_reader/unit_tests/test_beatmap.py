@@ -108,8 +108,6 @@ class TestBeatmap(unittest.TestCase):
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_X], 175, places=0)
         self.assertAlmostEquals(beatmap.hitobjects[23].tdata[4][Hitobject.TDATA_Y], 107, places=0)
 
-        # TODO: test more sliders
-
 
     def test_beatmap_loading_weird(self):
         beatmap = BeatmapIO.open_beatmap(os.path.join(
