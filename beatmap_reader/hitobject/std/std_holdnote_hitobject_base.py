@@ -227,11 +227,12 @@ class StdHoldNoteHitobjectBase(Hitobject):
         mid   = np.asarray(curve_points[1])
         end   = np.asarray(curve_points[2])
 
-        # fallback to bezier in degenerate cases
-        # https://github.com/ppy/osu-framework/blob/050a0b8639c9bd723100288a53923547ce87d487/osu.Framework/Utils/PathApproximator.cs#L324
+        # fallback to linear in degenerate cases
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertHitObjectParser.cs#L318-L322
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertHitObjectParser.cs#L366
         outer = (mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])
         if abs(outer) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
-            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
         def rot90acw(p):
             return np.asarray([ -p[1], p[0] ])
@@ -247,13 +248,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
         )
         if center is None:  # should be impossible after degeneracy check
             print('WARN[beatmap_reader]: circle center not found')
-            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
         # find the orientation
         angle_sign = np.sign(np.dot(rot90acw(end - start), start - mid))
         if angle_sign == 0:  # should be impossible after degeneracy check
             print('WARN[beatmap_reader]: uncaught degenerate circle')
-            return StdHoldNoteHitobjectBase.__make_linear([ start, end ])  # mid must be collinear
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
         # find the exact angle range
         relative_start = start - center
