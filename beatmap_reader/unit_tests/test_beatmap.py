@@ -1,5 +1,6 @@
 import unittest
 import os
+import ast
 
 from ..beatmapIO import BeatmapIO
 from ..hitobject.hitobject import Hitobject
@@ -142,6 +143,24 @@ class TestBeatmap(unittest.TestCase):
         self.assertEqual(distorted.tdata[0][Hitobject.TDATA_T], 85699)
         self.assertEqual(distorted.tdata[0][Hitobject.TDATA_X], 360)
         self.assertEqual(distorted.tdata[0][Hitobject.TDATA_Y], 272)
+
+
+    def test_beatmap_loading_slider_ticks(self):
+        beatmap = BeatmapIO.open_beatmap(os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'abraker - unknown (abraker) [slider_test].osu'
+        ))
+        data_path = os.path.join(
+            'beatmap_reader', 'unit_tests', 'data', 'slider_test_data.txt'
+        )
+        with open(data_path, 'r') as f:
+            data = ast.literal_eval(f.read())
+        for i, tdata in data:
+            truncated = [
+                [ int(d) for d in tick ]
+                for tick in beatmap.hitobjects[i].tdata
+            ]
+            self.assertEqual(truncated, tdata)
 
 
     def test_beatmap_loading_custom(self):
