@@ -1,6 +1,6 @@
 import unittest
 import os
-import ast
+import json
 
 from ..beatmapIO import BeatmapIO
 from ..hitobject.hitobject import Hitobject
@@ -149,16 +149,14 @@ class TestBeatmap(unittest.TestCase):
             'osu', 'abraker - unknown (abraker) [slider_test].osu'
         ))
         data_path = os.path.join(
-            'beatmap_reader', 'unit_tests', 'data', 'slider_test_data.txt'
+            'beatmap_reader', 'unit_tests', 'data', 'slider_test_data.json'
         )
         with open(data_path, 'r') as f:
-            data = ast.literal_eval(f.read())
-        for i, tdata in data:
-            truncated = [
-                [ int(d) for d in tick ]
-                for tick in beatmap.hitobjects[i].tdata
-            ]
-            self.assertEqual(truncated, tdata)
+            data = json.loads(f.read())
+        for i, tdata in data.items():
+            object = beatmap.hitobjects[int(i)]
+            int_data = [ list(map(int, tick)) for tick in object.tdata ]
+            self.assertEqual(int_data, tdata)
 
 
     def test_beatmap_loading_custom(self):
