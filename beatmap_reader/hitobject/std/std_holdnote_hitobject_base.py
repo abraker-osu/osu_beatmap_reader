@@ -43,7 +43,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
         curve_type, curve_points = self.__process_slider_data(kargs['sdata'])
 
         # The rough generated slider curve
-        gen_points = StdHoldNoteHitobjectBase.__process_curve_points(curve_type, curve_points, kargs['px_len'])
+        gen_points = StdHoldNoteHitobjectBase.__process_curve_points(curve_type, curve_points)
         length_sums = StdHoldNoteHitobjectBase.__get_length_sums(gen_points)
 
         StdHoldNoteHitobjectBase.__process_curve_length(gen_points, length_sums, kargs['px_len'], curve_points)
@@ -132,13 +132,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     
     @staticmethod
-    def __process_curve_points(curve_type, curve_points, px_len):
+    def __process_curve_points(curve_type, curve_points):
         if curve_type == StdHoldNoteHitobjectBase.BEZIER:
             return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.CIRCUMSCRIBED:
             if len(curve_points) == 3:
-                return StdHoldNoteHitobjectBase.__make_circumscribed(curve_points, px_len)
+                return StdHoldNoteHitobjectBase.__make_circumscribed(curve_points)
             return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR1:
@@ -221,7 +221,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     @staticmethod
-    def __make_circumscribed(curve_points, px_len):
+    def __make_circumscribed(curve_points):
         # use np.array for pointwise arithmetic
         start = np.asarray(curve_points[0])
         mid   = np.asarray(curve_points[1])
@@ -258,13 +258,20 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # find the exact angle range
         relative_start = start - center
+        relative_end = end - center
         start_angle = math.atan2(relative_start[1], relative_start[0])
+        end_angle = math.atan2(relative_end[1], relative_end[0])
         radius = np.linalg.norm(relative_start)
-        angle_size = px_len / radius
+
+        angle_size = angle_sign * (end_angle - start_angle)
+        if angle_size < 0:
+            angle_size += 2 * math.pi
+        if angle_size > 2 * math.pi:
+            angle_size -= 2 * math.pi
         angle_delta = angle_sign * angle_size
 
         # calculate points
-        steps = int(px_len / StdHoldNoteHitobjectBase.CURVE_POINTS_SEPARATION)
+        steps = int(radius * angle_size / StdHoldNoteHitobjectBase.CURVE_POINTS_SEPARATION) + 2
         step = angle_delta / steps
 
         def get_point(i):
