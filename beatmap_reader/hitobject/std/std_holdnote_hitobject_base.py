@@ -269,11 +269,5 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # calculate points
         steps = int(radius * angle_size / StdHoldNoteHitobjectBase.CURVE_POINTS_SEPARATION) + 2
-        step = angle_delta / steps
-
-        def get_point(i):
-            angle = start_angle + i * step
-            unit = np.asarray([ math.cos(angle), math.sin(angle) ])
-            return radius * unit + center
-
-        return [ get_point(i) for i in range(steps + 1) ]
+        angles = np.linspace(start_angle, start_angle + angle_delta, steps)
+        return np.add(center, radius * np.transpose([ np.cos(angles), np.sin(angles) ]))
