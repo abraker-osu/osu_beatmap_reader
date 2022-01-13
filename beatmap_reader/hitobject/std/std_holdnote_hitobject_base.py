@@ -100,8 +100,9 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     def __time_to_dist(self, time):
-        percent = value_to_percent(self.start_time(), self.end_time(), time)
-        return self.px_len * triangle(percent * self.repeats, 2)
+        start, end = self.start_time(), self.end_time()
+        percent = (time - start) / (end - start)
+        return self.px_len * abs(math.fmod(self.repeats * percent + 1, 2) - 1)
 
 
     def __dist_to_pos(self, distance):
