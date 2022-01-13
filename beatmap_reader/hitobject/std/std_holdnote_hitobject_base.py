@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 from ...utils.bezier import Bezier
-from ...utils.misc import triangle, intersect, lerp, dist, value_to_percent, binary_search, frange
+from ...utils.misc import triangle, intersect, lerp, value_to_percent, binary_search, frange
 
 from ..hitobject import Hitobject
 
@@ -59,7 +59,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
             return
 
         # The rough generated slider curve
-        self.gen_points = StdHoldNoteHitobjectBase.__process_curve_points(self.curve_type, self.curve_points)
+        self.gen_points = StdHoldNoteHitobjectBase.__process_curve_points(self.curve_type, self.curve_points, self.px_len)
         self.length_sums = StdHoldNoteHitobjectBase.__get_length_sums(self.gen_points)
         self.__process_curve_length()
 
@@ -132,14 +132,14 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     
     @staticmethod
-    def __process_curve_points(curve_type, curve_points):
+    def __process_curve_points(curve_type, curve_points, px_len):
         if curve_type == StdHoldNoteHitobjectBase.BEZIER:
-            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points, px_len)
 
         if curve_type == StdHoldNoteHitobjectBase.CIRCUMSCRIBED:
             if len(curve_points) == 3:
                 return StdHoldNoteHitobjectBase.__make_circumscribed(curve_points)
-            return StdHoldNoteHitobjectBase.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points, px_len)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR1:
             return StdHoldNoteHitobjectBase.__make_linear(curve_points)
@@ -195,7 +195,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
 
     @staticmethod
-    def __make_bezier(curve_points):
+    def __make_bezier(curve_points, px_len):
         gen_points = []
 
         # Beziers: splits points into different Beziers if has the same points (red points)
@@ -210,7 +210,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
             # If we reached a red point or the end of the point list, then segment the bezier
             if segment_bezier:
-                gen_points.extend(Bezier(point_section).curve_points)
+                gen_points.extend(Bezier(point_section, length_bound=px_len).curve_points)
                 point_section = []
 
         return gen_points
