@@ -465,13 +465,13 @@ class BeatmapIO():
 
         for timing_point in beatmap.timing_points:
             if timing_point.inherited:
-                    timing_point.beat_length = base
+                timing_point.beat_length = base
 
-                    if timing_point.beat_interval < 0:
-                        slider_multiplier = timing_point.beat_interval
-                        old_beat = timing_point.beat_interval
-                    else:
-                        slider_multiplier = old_beat
+                if timing_point.beat_interval < 0:
+                    slider_multiplier = timing_point.beat_interval
+                    old_beat = timing_point.beat_interval
+                else:
+                    slider_multiplier = old_beat
             else:
                 slider_multiplier = -100
                 bpm = 60000 / timing_point.beat_interval
@@ -488,6 +488,7 @@ class BeatmapIO():
     @staticmethod
     def __postprocess_hitobjects(beatmap):
         t_idx = 0
+        
         for hitobject in beatmap.hitobjects:
             if beatmap.gamemode == Gamemode.OSU or beatmap.gamemode == None:
                 if not hitobject.is_htype(Hitobject.SLIDER):
@@ -500,14 +501,13 @@ class BeatmapIO():
                         t_idx = i
                     else:
                         break
+                
                 timing_point = beatmap.timing_points[t_idx]
-
                 beat_length = timing_point.beat_length
                 velocity = (100/beat_length) * (-100/timing_point.slider_multiplier) * beatmap.difficulty.sm
                 end_time = hitobject.start_time() + hitobject.repeats * hitobject.px_len / velocity
 
                 hitobject.generate_tick_data(end_time=end_time, velocity=velocity, beat_length=timing_point.beat_length, tick_rate=beatmap.difficulty.st)
-
             else:
                 hitobject.generate_tick_data()
 

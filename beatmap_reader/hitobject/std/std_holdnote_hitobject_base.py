@@ -69,8 +69,10 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         tick_times = list(frange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
         cutoff_dist = self.px_len - StdHoldNoteHitobjectBase.TICK_CUTOFF_MS * velocity
+
         while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > cutoff_dist:
             tick_times.pop()
+
         ticks = [ (self.time_to_pos(tick_time), tick_time - self.start_time()) for tick_time in tick_times ]
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L118-L137
@@ -91,6 +93,7 @@ class StdHoldNoteHitobjectBase(Hitobject):
             self.end_time() - StdHoldNoteHitobjectBase.END_TICK_OFFSET_MS,
             midpoint_time
         )
+
         x_pos, y_pos = self.time_to_pos(end_tick_time)
         self.tdata.append([ x_pos, y_pos, end_tick_time ])
 
@@ -107,8 +110,12 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def __dist_to_pos(self, distance):
         idx = binary_search(self.length_sums, distance)
-        if idx == 0: return self.gen_points[0]
-        if idx == len(self.gen_points): return self.gen_points[-1]
+
+        if idx == 0:
+            return self.gen_points[0]
+            
+        if idx == len(self.gen_points):
+            return self.gen_points[-1]
 
         # avoid division by zero
         if abs(self.length_sums[idx] - self.length_sums[idx - 1]) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
@@ -172,15 +179,19 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L284
         extend = len(self.curve_points) >= 2 and self.curve_points[-1] != self.curve_points[-2]
+        
         # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
         if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < self.px_len:
             i = 2
+            
             # our curve generation can output repeated points, skip them
             while self.length_sums[-1] - self.length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
                 if i == len(self.gen_points):
                     print('WARN[beatmap_reader]: slider extension failed (too short)')
                     return
+
                 i += 1
+            
             ratio = (self.px_len - self.length_sums[-i]) / (self.length_sums[-1] - self.length_sums[-i])
             self.gen_points[-1] = list(map(lerp, self.gen_points[-i], self.gen_points[-1], [ ratio, ratio ]))
             self.length_sums[-1] = self.px_len
@@ -239,17 +250,22 @@ class StdHoldNoteHitobjectBase(Hitobject):
         midb = (end + mid)/2
         nora = rot90acw(mid - start)
         norb = rot90acw(mid - end)
+
         center = intersect(
             mida, nora, midb, norb,
             precision=StdHoldNoteHitobjectBase.ARC_PARALLEL_THRESHOLD
         )
-        if center is None:  # should be impossible after degeneracy check
+
+        # should be impossible after degeneracy check
+        if center is None:
             print('WARN[beatmap_reader]: circle center not found')
             return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
         # find the orientation
         angle_sign = np.sign(np.dot(rot90acw(end - start), start - mid))
-        if angle_sign == 0:  # should be impossible after degeneracy check
+
+        # should be impossible after degeneracy check
+        if angle_sign == 0:
             print('WARN[beatmap_reader]: uncaught degenerate circle')
             return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
@@ -261,10 +277,13 @@ class StdHoldNoteHitobjectBase(Hitobject):
         radius = np.linalg.norm(relative_start)
 
         angle_size = angle_sign * (end_angle - start_angle)
+
         if angle_size < 0:
             angle_size += 2 * math.pi
+
         if angle_size > 2 * math.pi:
             angle_size -= 2 * math.pi
+
         angle_delta = angle_sign * angle_size
 
         # calculate points
