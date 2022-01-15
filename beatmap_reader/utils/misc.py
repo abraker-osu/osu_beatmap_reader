@@ -20,7 +20,28 @@ def bernstein(i, n, t):
 
 def bound(min_val, max_val, value):
     return min(max(value, min_val), max_val)
+
+
+def frange(start, stop, step):
+    curr = start
+    while curr < stop:
+        yield curr
+        curr += step
     
+
+def binary_search(values, value):
+    low = 0
+    high = len(values)
+    while low < high:
+        mid = (low + high) // 2
+        if values[mid] < value:
+            low = mid + 1
+        elif values[mid] > value:
+            high = mid
+        else:
+            return mid
+    return low
+
 
 def value_to_percent(min_val, max_val, value):
     return 1.0 - ((max_val - bound(min_val, value, max_val)) / (max_val - min_val))
@@ -43,9 +64,9 @@ def dist(a, b):
     return (dx*dx + dy*dy)**0.5
 
 
-def intersect(a, ta, b, tb):
+def intersect(a, ta, b, tb, precision):
     des = tb[0]*ta[1] - tb[1]*ta[0]
-    if abs(des) < 0.00001: return None
+    if abs(des) < precision: return None
 
     u = ((b[1] - a[1])*ta[0] + (a[0] - b[0])*ta[1]) / des
     return b + tb*u

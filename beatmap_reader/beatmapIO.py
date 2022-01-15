@@ -487,21 +487,26 @@ class BeatmapIO():
 
     @staticmethod
     def __postprocess_hitobjects(beatmap):
+        t_idx = 0
         for hitobject in beatmap.hitobjects:
             if beatmap.gamemode == Gamemode.OSU or beatmap.gamemode == None:
                 if not hitobject.is_htype(Hitobject.SLIDER):
                     hitobject.generate_tick_data()
                     continue
 
-                # Find the last timing that occurs before the hitobject starts
-                for timing_point in beatmap.timing_points:
-                    if timing_point.offset > hitobject.start_time():
+                # Find the last timing that occurs before (or when) the hitobject starts
+                for i in range(t_idx + 1, len(beatmap.timing_points)):
+                    if beatmap.timing_points[i].offset <= hitobject.start_time():
+                        t_idx = i
+                    else:
                         break
+                timing_point = beatmap.timing_points[t_idx]
 
-                to_repeat_time = round(((-600.0/timing_point.bpm) * hitobject.px_len * timing_point.slider_multiplier) / (100.0 * beatmap.difficulty.sm))
-                end_time = hitobject.start_time() + to_repeat_time*hitobject.repeats
+                beat_length = timing_point.beat_length
+                velocity = (100/beat_length) * (-100/timing_point.slider_multiplier) * beatmap.difficulty.sm
+                end_time = hitobject.start_time() + hitobject.repeats * hitobject.px_len / velocity
 
-                hitobject.generate_tick_data(end_time=end_time, sm=beatmap.difficulty.sm, st=beatmap.difficulty.st)
+                hitobject.generate_tick_data(end_time=end_time, velocity=velocity, beat_length=timing_point.beat_length, tick_rate=beatmap.difficulty.st)
 
             else:
                 hitobject.generate_tick_data()

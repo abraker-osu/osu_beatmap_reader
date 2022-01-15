@@ -2,13 +2,36 @@ import math
 import numpy as np
 
 from ...utils.bezier import Bezier
-from ...utils.misc import triangle, intersect, lerp, dist, value_to_percent
+from ...utils.misc import triangle, intersect, lerp, value_to_percent, binary_search, frange
 
 from ..hitobject import Hitobject
 
 
 
 class StdHoldNoteHitobjectBase(Hitobject):
+    LINEAR_SUBDIVISIONS = 5
+
+    PRECISION_THRESHOLD_PX = 0.01
+
+    ARC_PARALLEL_THRESHOLD = 0.00001
+
+    CURVE_POINTS_SEPARATION = 5
+
+    TICK_CUTOFF_MS = 10
+    """
+    Ticks closer to the end time of the slider than this are not generated.
+
+    Value: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L24
+    """
+
+    END_TICK_OFFSET_MS = 36
+    """
+    The tick for sliderend judgement is offset backwards in time by this amount
+    unless the slider is particularly short.
+
+    Value: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertSlider.cs#L52
+    Usage: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
+    """
 
     LINEAR1       = 'L'
     LINEAR2       = 'C'
@@ -19,10 +42,9 @@ class StdHoldNoteHitobjectBase(Hitobject):
         Hitobject.__init__(self, **kargs)
 
         curve_type, curve_points = self.__process_slider_data(kargs['sdata'])
-
-        # The rough generated slider curve
-        self.gen_points = self.__process_curve_points(curve_type, curve_points, kargs['px_len'])
         
+        self.gen_points = []
+        self.length_sums = []
         self.px_len       = kargs['px_len']
         self.repeats      = kargs['repeats']
         self.curve_type   = curve_type
@@ -31,46 +53,69 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
     def generate_tick_data(self, **kargs):
         self.hdata[Hitobject.HDATA_TEND] = kargs['end_time']
-        ms_per_beat = (100.0 * kargs['sm'])/(self.get_velocity() * kargs['st'])
+        if self.end_time() == self.start_time():
+            pos = self.hdata[Hitobject.HDATA_POSX], self.hdata[Hitobject.HDATA_POSY]
+            self.tdata.append([ *pos, self.start_time() ])
+            return
 
-        for beat_time in np.arange(self.start_time(), self.end_time(), ms_per_beat):
-            x_pos, y_pos = self.time_to_pos(beat_time)
-            self.tdata.append([ x_pos, y_pos, beat_time ])
+        # The rough generated slider curve
+        self.gen_points = StdHoldNoteHitobjectBase.__process_curve_points(self.curve_type, self.curve_points, self.px_len)
+        self.length_sums = StdHoldNoteHitobjectBase.__get_length_sums(self.gen_points)
+        self.__process_curve_length()
 
-        if self.tdata[-1][Hitobject.TDATA_T] != self.end_time():
-            x_pos, y_pos = self.time_to_pos(self.end_time())
-            self.tdata.append([ x_pos, y_pos, self.end_time() ])
+        velocity = kargs['velocity']
+        ms_per_beat = kargs['beat_length'] / kargs['tick_rate']
+        ms_per_repeat = self.px_len / velocity
+
+        tick_times = list(frange(self.start_time() + ms_per_beat, self.start_time() + ms_per_repeat, ms_per_beat))
+        cutoff_dist = self.px_len - StdHoldNoteHitobjectBase.TICK_CUTOFF_MS * velocity
+        while len(tick_times) > 0 and self.__time_to_dist(tick_times[-1]) > cutoff_dist:
+            tick_times.pop()
+        ticks = [ (self.time_to_pos(tick_time), tick_time - self.start_time()) for tick_time in tick_times ]
+
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L118-L137
+        for repeat in range(self.repeats):
+            is_reverse = repeat % 2 == 1
+
+            repeat_start_time = self.start_time() + repeat * ms_per_repeat
+            x_pos, y_pos = self.gen_points[-1] if is_reverse else self.gen_points[0]
+            self.tdata.append([ x_pos, y_pos, repeat_start_time ])
+
+            if is_reverse:
+                self.tdata.extend([ *pos, repeat_start_time + (ms_per_repeat - time) ] for pos, time in reversed(ticks))
+            else:
+                self.tdata.extend([ *pos, repeat_start_time + time ] for pos, time in ticks)
+
+        midpoint_time = (self.start_time() + self.end_time()) / 2
+        end_tick_time = max(
+            self.end_time() - StdHoldNoteHitobjectBase.END_TICK_OFFSET_MS,
+            midpoint_time
+        )
+        x_pos, y_pos = self.time_to_pos(end_tick_time)
+        self.tdata.append([ x_pos, y_pos, end_tick_time ])
 
 
     def time_to_pos(self, time):
-        return self.__idx_to_pos(self.__percent_to_idx(value_to_percent(self.start_time(), self.end_time(), time)))
+        return self.__dist_to_pos(self.__time_to_dist(time))
 
 
-    # TODO: make sure this is correct
-    # TODO: test a slider 200px across with various repeat times and tick spacings
-    def get_velocity(self):
-        return self.px_len / (self.end_time() - self.start_time())
+    def __time_to_dist(self, time):
+        start, end = self.start_time(), self.end_time()
+        percent = (time - start) / (end - start)
+        return self.px_len * abs(math.fmod(self.repeats * percent + 1, 2) - 1)
 
 
-    def __idx_to_pos(self, idx):
-        if idx > len(self.gen_points) - 2:
-            return self.gen_points[-1]
+    def __dist_to_pos(self, distance):
+        idx = binary_search(self.length_sums, distance)
+        if idx == 0: return self.gen_points[0]
+        if idx == len(self.gen_points): return self.gen_points[-1]
 
-        percent_point = float(int(idx)) - idx
-        x_pos = lerp(self.gen_points[idx][0], self.gen_points[idx + 1][0], percent_point)
-        y_pos = lerp(self.gen_points[idx][1], self.gen_points[idx + 1][1], percent_point)
+        # avoid division by zero
+        if abs(self.length_sums[idx] - self.length_sums[idx - 1]) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
+            return self.gen_points[idx]
 
-        return x_pos, y_pos
-
-
-    def __percent_to_idx(self, percent):
-        if percent < 0.0: return 0
-        if percent > 1.0: return -1 if self.repeats == 0 else 0
-
-        idx = percent*len(self.gen_points)
-        idx_pos = triangle(idx*self.repeats, (2 * len(self.gen_points)) - 1)
-        
-        return int(idx_pos)
+        portion = value_to_percent(self.length_sums[idx - 1], self.length_sums[idx], distance)
+        return list(map(lerp, self.gen_points[idx - 1], self.gen_points[idx], [ portion, portion ]))
 
 
     def __process_slider_data(self, sdata):
@@ -87,41 +132,71 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return curve_type, curve_points
 
     
-    def __process_curve_points(self, curve_type, curve_points, px_len):
-        gen_points  = []
-        
+    @staticmethod
+    def __process_curve_points(curve_type, curve_points, px_len):
         if curve_type == StdHoldNoteHitobjectBase.BEZIER:
-            return self.__make_bezier(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points, px_len)
 
         if curve_type == StdHoldNoteHitobjectBase.CIRCUMSCRIBED:
             if len(curve_points) == 3:
-                gen_points = self.__make_circumscribed(curve_points, px_len)
-                if len(gen_points) == 0:
-                    return self.__make_bezier(curve_points)
-                return gen_points
-            
-            return self.__make_bezier(curve_points)
+                return StdHoldNoteHitobjectBase.__make_circumscribed(curve_points)
+            return StdHoldNoteHitobjectBase.__make_bezier(curve_points, px_len)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR1:
-            return self.__make_linear(curve_points)
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
         if curve_type == StdHoldNoteHitobjectBase.LINEAR2:
-            return self.__make_linear(curve_points)
+            print('WARN[beatmap_reader]: found catmull, treating as linear')
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
+
+        print(f'WARN[beatmap_reader]: unrecognized curve type {curve_type}')
+        return []
 
 
-    def __make_linear(self, curve_points):
-        gen_points = []
-
-        # Lines: generate a new curve for each sequential pair
-        # ab  bc  cd  de  ef  fg
-        for i in range(len(curve_points) - 1):
-            bezier = Bezier([ curve_points[i], curve_points[i + 1] ])
-            gen_points += bezier.curve_points
-            
-        return gen_points
+    @staticmethod
+    def __get_length_sums(gen_points):
+        diffs = np.subtract(gen_points[1:], gen_points[:-1])
+        length_sums = np.cumsum(np.sqrt(np.einsum('...i,...i', diffs, diffs)))
+        return np.concatenate(([ 0 ], length_sums))
 
 
-    def __make_bezier(self, curve_points):
+    def __process_curve_length(self):
+        """
+        Truncates and extends the curve to match the given length, and updates
+        the length sums correspondingly.
+        """
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L295-L303
+        while self.length_sums[-1] > self.px_len:
+            self.length_sums = self.length_sums[:-1]
+            self.gen_points = self.gen_points[:-1]
+
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L284
+        extend = len(self.curve_points) >= 2 and self.curve_points[-1] != self.curve_points[-2]
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderPath.cs#L314-L317
+        if extend and len(self.gen_points) >= 2 and self.length_sums[-1] < self.px_len:
+            i = 2
+            # our curve generation can output repeated points, skip them
+            while self.length_sums[-1] - self.length_sums[-i] < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
+                if i == len(self.gen_points):
+                    print('WARN[beatmap_reader]: slider extension failed (too short)')
+                    return
+                i += 1
+            ratio = (self.px_len - self.length_sums[-i]) / (self.length_sums[-1] - self.length_sums[-i])
+            self.gen_points[-1] = list(map(lerp, self.gen_points[-i], self.gen_points[-1], [ ratio, ratio ]))
+            self.length_sums[-1] = self.px_len
+
+
+    @staticmethod
+    def __make_linear(curve_points):
+        # __dist_to_pos lerps already, but subdivide so that truncation works
+        return np.concatenate([
+            np.linspace(curr, nxt, StdHoldNoteHitobjectBase.LINEAR_SUBDIVISIONS)
+            for curr, nxt in zip(curve_points, curve_points[1:])
+        ])
+
+
+    @staticmethod
+    def __make_bezier(curve_points, px_len):
         gen_points = []
 
         # Beziers: splits points into different Beziers if has the same points (red points)
@@ -136,63 +211,63 @@ class StdHoldNoteHitobjectBase(Hitobject):
 
             # If we reached a red point or the end of the point list, then segment the bezier
             if segment_bezier:
-                gen_points += Bezier(point_section).curve_points
+                gen_points.extend(Bezier(point_section, length_bound=px_len).curve_points)
                 point_section = []
 
         return gen_points
 
 
-    def __make_circumscribed(self, curve_points, px_len):
-        gen_points = []
-
-        # construct the three points
+    @staticmethod
+    def __make_circumscribed(curve_points):
+        # use np.array for pointwise arithmetic
         start = np.asarray(curve_points[0])
         mid   = np.asarray(curve_points[1])
         end   = np.asarray(curve_points[2])
 
+        # fallback to linear in degenerate cases
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertHitObjectParser.cs#L318-L322
+        # https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/Legacy/ConvertHitObjectParser.cs#L366
+        outer = (mid[1] - start[1]) * (end[0] - start[0]) - (mid[0] - start[0]) * (end[1] - start[1])
+        if abs(outer) < StdHoldNoteHitobjectBase.PRECISION_THRESHOLD_PX:
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
+
+        def rot90acw(p):
+            return np.asarray([ -p[1], p[0] ])
+
         # find the circle center
-        mida = (start + mid)/2   # midpoint
-        midb = (end + mid)/2     # midpoint
-        nora = np.asarray([ start[1] - mid[1], mid[0] - start[0] ])   # This is turning it into (-y, x)
-        norb = np.asarray([ end[1]   - mid[1], mid[0] - end[0] ])
-        
-        circle_center = intersect(mida, nora, midb, norb)
-        if type(circle_center) == type(None):
-            return gen_points
+        mida = (start + mid)/2
+        midb = (end + mid)/2
+        nora = rot90acw(mid - start)
+        norb = rot90acw(mid - end)
+        center = intersect(
+            mida, nora, midb, norb,
+            precision=StdHoldNoteHitobjectBase.ARC_PARALLEL_THRESHOLD
+        )
+        if center is None:  # should be impossible after degeneracy check
+            print('WARN[beatmap_reader]: circle center not found')
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
-        start_angle_point = start - circle_center
-        mid_angle_point   = mid - circle_center
-        end_angle_point   = end - circle_center
+        # find the orientation
+        angle_sign = np.sign(np.dot(rot90acw(end - start), start - mid))
+        if angle_sign == 0:  # should be impossible after degeneracy check
+            print('WARN[beatmap_reader]: uncaught degenerate circle')
+            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
-        start_angle = math.atan2(start_angle_point[1], start_angle_point[0])  # It's math.atan2(y, x)
-        mid_angle   = math.atan2(mid_angle_point[1], mid_angle_point[0])
-        end_angle   = math.atan2(end_angle_point[1], end_angle_point[0])
+        # find the exact angle range
+        relative_start = start - center
+        relative_end = end - center
+        start_angle = math.atan2(relative_start[1], relative_start[0])
+        end_angle = math.atan2(relative_end[1], relative_end[0])
+        radius = np.linalg.norm(relative_start)
 
-        if not start_angle < mid_angle < end_angle:
-            if abs(start_angle + 2*math.pi - end_angle) < 2*math.pi and (start_angle + 2*math.pi < mid_angle < end_angle):
-                start_angle += 2*math.pi
-            elif abs(start_angle - (end_angle + 2*math.pi)) < 2*math.pi and (start_angle < mid_angle < end_angle + 2*math.pi):
-                end_angle += 2*math.pi
-            elif abs(start_angle - 2*math.pi - end_angle) < 2*math.pi and (start_angle - 2*math.pi < mid_angle < end_angle):
-                start_angle -= 2*math.pi
-            elif abs(start_angle - (end_angle - 2*math.pi)) < 2*math.pi and (start_angle < mid_angle < end_angle - 2*math.pi):
-                end_angle -= 2*math.pi   
-            else:
-                print('Cannot find angles between mid_angle')
-                return gen_points
+        angle_size = angle_sign * (end_angle - start_angle)
+        if angle_size < 0:
+            angle_size += 2 * math.pi
+        if angle_size > 2 * math.pi:
+            angle_size -= 2 * math.pi
+        angle_delta = angle_sign * angle_size
 
-        # find an angle with an arc length of pixelLength along this circle
-        radius = dist(start_angle_point, [ 0, 0 ])
-        arc_angle = px_len / radius                                                                  # len = theta * r / theta = len / r
-        end_angle = start_angle + arc_angle if end_angle > start_angle else start_angle - arc_angle  # now use it for our new end angle
-
-        # Calculate points
-        step = px_len / 5  # 5 = CURVE_POINTS_SEPERATION
-        len = int(step) + 1
-
-        for i in range(len):
-            ang = lerp(start_angle, end_angle, i/step)
-            xy  = [ math.cos(ang)*radius + circle_center[0], math.sin(ang)*radius + circle_center[1] ]
-            gen_points.append(xy)
-        
-        return gen_points
+        # calculate points
+        steps = int(radius * angle_size / StdHoldNoteHitobjectBase.CURVE_POINTS_SEPARATION) + 2
+        angles = np.linspace(start_angle, start_angle + angle_delta, steps)
+        return np.add(center, radius * np.transpose([ np.cos(angles), np.sin(angles) ]))
