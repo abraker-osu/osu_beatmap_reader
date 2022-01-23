@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 from ...utils.bezier import Bezier
-from ...utils.misc import triangle, intersect, lerp, value_to_percent, binary_search, frange
+from ...utils.misc import intersect, lerp, value_to_percent, binary_search, frange, catmull
 
 from ..hitobject import Hitobject
 
@@ -10,6 +10,7 @@ from ..hitobject import Hitobject
 
 class StdHoldNoteHitobjectBase(Hitobject):
     LINEAR_SUBDIVISIONS = 5
+    CATMULL_SUBDIVISIONS = 50
 
     PRECISION_THRESHOLD_PX = 0.01
 
@@ -33,8 +34,8 @@ class StdHoldNoteHitobjectBase(Hitobject):
     Usage: https://github.com/ppy/osu/blob/ed992eed64b30209381f040586b0e8392d1c168e/osu.Game/Rulesets/Objects/SliderEventGenerator.cs#L79
     """
 
-    LINEAR1       = 'L'
-    LINEAR2       = 'C'
+    LINEAR        = 'L'
+    CATMULL       = 'C'
     BEZIER        = 'B'
     CIRCUMSCRIBED = 'P'
 
@@ -149,12 +150,11 @@ class StdHoldNoteHitobjectBase(Hitobject):
                 return StdHoldNoteHitobjectBase.__make_circumscribed(curve_points)
             return StdHoldNoteHitobjectBase.__make_bezier(curve_points, px_len)
 
-        if curve_type == StdHoldNoteHitobjectBase.LINEAR1:
+        if curve_type == StdHoldNoteHitobjectBase.LINEAR:
             return StdHoldNoteHitobjectBase.__make_linear(curve_points)
 
-        if curve_type == StdHoldNoteHitobjectBase.LINEAR2:
-            print('WARN[beatmap_reader]: found catmull, treating as linear')
-            return StdHoldNoteHitobjectBase.__make_linear(curve_points)
+        if curve_type == StdHoldNoteHitobjectBase.CATMULL:
+            return StdHoldNoteHitobjectBase.__make_catmull(curve_points)
 
         print(f'WARN[beatmap_reader]: unrecognized curve type {curve_type}')
         return []
@@ -203,6 +203,22 @@ class StdHoldNoteHitobjectBase(Hitobject):
         return np.concatenate([
             np.linspace(curr, nxt, StdHoldNoteHitobjectBase.LINEAR_SUBDIVISIONS)
             for curr, nxt in zip(curve_points, curve_points[1:])
+        ])
+
+
+    @staticmethod
+    def __make_catmull(curve_points):
+        # https://github.com/ppy/osu-framework/blob/050a0b8639c9bd723100288a53923547ce87d487/osu.Framework/Utils/PathApproximator.cs#L142
+        curve_points = list(map(np.asarray, curve_points))
+        curve_points = curve_points[0:1] + curve_points
+        curve_points.append(2 * curve_points[-1] - curve_points[-2])
+        curve_points.append(2 * curve_points[-1] - curve_points[-2])
+
+        t = np.linspace(0, 1, StdHoldNoteHitobjectBase.CATMULL_SUBDIVISIONS)
+        t = np.expand_dims(t, -1)
+        return np.concatenate([
+            catmull(curve_points[i:i+4], t)
+            for i in range(0, len(curve_points) - 3)
         ])
 
 
