@@ -18,6 +18,18 @@ def bernstein(i, n, t):
     return binomialCoefficient(n, i) * (t**i) * ((1 - t)**(n - i))
 
 
+def catmull(ps, t):
+    # https://github.com/ppy/osu-framework/blob/050a0b8639c9bd723100288a53923547ce87d487/osu.Framework/Utils/PathApproximator.cs#L449
+    t2 = t * t
+    t3 = t2 * t
+    return 0.5 * (
+        2 * ps[1]
+        + (ps[2] - ps[0]) * t
+        + (2 * ps[0] - 5 * ps[1] + 4 * ps[2] - ps[3]) * t2
+        + (ps[3] - 3 * ps[2] + 3 * ps[1] - ps[0]) * t3
+    )
+
+
 def bound(min_val, max_val, value):
     return min(max(value, min_val), max_val)
 
