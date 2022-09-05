@@ -1,6 +1,6 @@
-import warnings
+import io
 import hashlib
-import numpy as np
+
 
 from .beatmap_base import BeatmapBase
 from .gamemode import Gamemode
@@ -99,20 +99,36 @@ class BeatmapIO():
     """
     @staticmethod
     def load_beatmap(beatmap_data):
-        beatmap = BeatmapBase()
-        
-        # Load all the data
-        BeatmapIO.__parse_beatmap_file_format(beatmap_data, beatmap)
-        BeatmapIO.__parse_beatmap_content(beatmap_data, beatmap)
+        def __load(osu_file_data):
+            beatmap = BeatmapBase()
+            
+            # Load all the data
+            BeatmapIO.__parse_beatmap_file_format(osu_file_data, beatmap)
+            BeatmapIO.__parse_beatmap_content(osu_file_data, beatmap)
 
-        # Process all the data
-        BeatmapIO.__process_timing_points(beatmap)
-        BeatmapIO.__postprocess_hitobjects(beatmap)
+            # Process all the data
+            BeatmapIO.__process_timing_points(beatmap)
+            BeatmapIO.__postprocess_hitobjects(beatmap)
 
-        # Fill in extra data if it's missing
-        BeatmapIO.__postprocess_map(beatmap)
+            # Fill in extra data if it's missing
+            BeatmapIO.__postprocess_map(beatmap)
 
-        return beatmap
+            return beatmap
+
+        # Ensure a stringio object is passed to parsing
+        if isinstance(beatmap_data, str):
+            with io.StringIO() as f:
+                f.write(beatmap_data)
+                f.seek(0)
+                return __load(f)
+
+        if isinstance(beatmap_data, bytes):
+            with io.StringIO() as f:
+                f.write(beatmap_data.decode('utf-8'))
+                f.seek(0)
+                return __load(f)
+
+        return __load(beatmap_data)
 
 
     """
@@ -129,6 +145,7 @@ class BeatmapIO():
 
     @staticmethod
     def __postprocess_map(beatmap):
+        # Old maps dont have explicit ar and hp - they take on od value
         if beatmap.difficulty.ar == None:
             beatmap.set_ar(beatmap.difficulty.od)
 
@@ -145,7 +162,7 @@ class BeatmapIO():
     def __parse_beatmap_file_format(beatmap_data, beatmap):
         line  = beatmap_data.readline()
         data  = line.split('osu file format v')
-        
+
         try: beatmap.metadata.beatmap_format = int(data[1])
         except: return
 
@@ -156,7 +173,7 @@ class BeatmapIO():
 
         section = BeatmapIO.__Section.SECTION_NONE
         line    = ''
-        
+
         while True:
             line = beatmap_data.readline()
 
@@ -168,7 +185,7 @@ class BeatmapIO():
             elif line.strip() == '[TimingPoints]': section = BeatmapIO.__Section.SECTION_TIMINGPOINTS
             elif line.strip() == '[Colours]':      section = BeatmapIO.__Section.SECTION_COLOURS
             elif line.strip() == '[HitObjects]':   section = BeatmapIO.__Section.SECTION_HITOBJECTS
-            elif line == '':               
+            elif line == '':
                 return
             else:
                 BeatmapIO.__parse_section(section, line, beatmap)
