@@ -1,13 +1,20 @@
 import unittest
 import os
 import json
+import timeit
+
+from numpy.lib.nanfunctions import nancumsum
+
+from ..utils.bezier import Bezier
 
 from ..beatmapIO import BeatmapIO
 from ..hitobject.hitobject import Hitobject
+from ..hitobject.std.std_holdnote_hitobject_base import StdHoldNoteHitobjectBase
 
 
 class TestBeatmap(unittest.TestCase):
 
+    '''
     def test_beatmap_loading_mania(self):
         beatmap = BeatmapIO.open_beatmap(os.path.join(
             'beatmap_reader', 'unit_tests', 'maps',
@@ -141,7 +148,7 @@ class TestBeatmap(unittest.TestCase):
         self.assertEqual(distorted.tdata[0][Hitobject.TDATA_T], 85699)
         self.assertEqual(distorted.tdata[0][Hitobject.TDATA_X], 360)
         self.assertEqual(distorted.tdata[0][Hitobject.TDATA_Y], 272)
-
+    
 
     def test_beatmap_loading_slider_ticks(self):
         beatmap = BeatmapIO.open_beatmap(os.path.join(
@@ -157,10 +164,64 @@ class TestBeatmap(unittest.TestCase):
             object = beatmap.hitobjects[int(i)]
             int_data = [ list(map(int, tick)) for tick in object.tdata ]
             self.assertEqual(int_data, tdata)
-
+    
 
     def test_beatmap_loading_custom(self):
         beatmap = BeatmapIO.open_beatmap(os.path.join(
             'beatmap_reader', 'unit_tests', 'maps',
             'osu', 'abraker - unknown (abraker) [250ms].osu'
         ))
+    '''
+
+
+    def test_performance(self):
+        '''
+        n = 10
+
+        path = os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'abraker - unknown (abraker) [slider_test].osu'
+        )
+        print(path, timeit.Timer(lambda: BeatmapIO.open_beatmap(path)).timeit(number=n)/n)
+
+        path = os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'Mutsuhiko Izumi - Red Goose (nold_1702) [ERT Basic].osu'
+        )
+        print(path, timeit.Timer(lambda:  BeatmapIO.open_beatmap(path)).timeit(number=n)/n)
+        '''
+        path = os.path.join(
+            'beatmap_reader', 'unit_tests', 'maps',
+            'osu', 'stargazer.osu'
+        )
+        print(path, timeit.Timer(lambda: BeatmapIO.open_beatmap(path)).timeit(number=1))
+
+    
+    '''
+    def test_slider_performance(self):
+        n = 10
+        data_path = os.path.join(
+            'beatmap_reader', 'unit_tests', 'data', 'slider_input_data.json'
+        )
+
+        with open(data_path, 'r') as f:
+            data = json.loads(f.read())
+
+        for i, slider_data in data.items():
+            print(f'Hitobject {i}: ', timeit.Timer(lambda: StdHoldNoteHitobjectBase(**slider_data)).timeit(number=n)/n)
+    '''
+
+
+    '''
+    def test_bezier_performance(self):
+        n = 10
+        data_path = os.path.join(
+            'beatmap_reader', 'unit_tests', 'data', 'bezier_input_data.json'
+        )
+
+        with open(data_path, 'r') as f:
+            data = json.loads(f.read())
+
+        for i, bezier_data in data.items():
+            print(f'Bezier {i}: ', timeit.Timer(lambda: Bezier(bezier_data)).timeit(number=n)/n)
+    '''
