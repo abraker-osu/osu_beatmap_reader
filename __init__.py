@@ -1,1 +1,1 @@
-from .beatmap_reader.beatmapIO import BeatmapIO, Gamemode
+from .beatmap_reader.beatmapIO import BeatmapIO, BeatmapBase, Gamemode
