@@ -1,9 +1,10 @@
 import numpy as np
 
+from osu_interfaces import IBeatmap
 from .gamemode import Gamemode
 from .hitobject.hitobject import Hitobject
 
-class BeatmapBase:
+class BeatmapBase(IBeatmap):
 
     PLAYFIELD_WIDTH  = 512  # osu!px
     PLAYFIELD_HEIGHT = 384  # osu!px
