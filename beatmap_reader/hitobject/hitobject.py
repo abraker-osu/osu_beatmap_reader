@@ -3,13 +3,13 @@ import numpy as np
 from osu_interfaces import IHitobject
 
 
-"""
-Abstract object that holds common hitobject data
-
-Input: 
-    beatmap_data - hitobject data read from the beatmap file
-"""
 class Hitobject(IHitobject):
+    """
+    Abstract object that holds common hitobject data
+
+    Input:
+        beatmap_data - hitobject data read from the beatmap file
+    """
 
     HDATA_POSX = 0   # Hitobject x position
     HDATA_POSY = 1   # Hitobject y position
@@ -23,10 +23,15 @@ class Hitobject(IHitobject):
 
     def __init__(self, **kargs):
         # Basic details every hitobject has, indexed by HDATA
-        self.hdata = [ None, None, None, None, None ]
+        self.hdata: list[int | None] = [ None, None, None, None, None ]
 
         # Tick data are points along long hitobject, indexed by TDATA
         self.tdata = []
+
+        # Number of repeats. Used for sliders
+        self.repeats = 0
+
+        self.px_len = 0
 
         # Fill in data
         if kargs['htype'] & Hitobject.CIRCLE:
@@ -48,35 +53,55 @@ class Hitobject(IHitobject):
         self.index = None
 
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.tick_data())
 
 
-    def pos_x(self):
-        return self.hdata[Hitobject.HDATA_POSX]
+    def pos_x(self) -> int:
+        ret = self.hdata[Hitobject.HDATA_POSX]
+        if ret is None:
+            raise ValueError('Hitobject pos_x is None')
+
+        return ret
 
 
-    def pos_y(self):
-        return self.hdata[Hitobject.HDATA_POSY]
+    def pos_y(self) -> int:
+        ret = self.hdata[Hitobject.HDATA_POSY]
+        if ret is None:
+            raise ValueError('Hitobject pos_y is None')
+
+        return ret
 
 
-    def start_time(self):
-        return self.hdata[Hitobject.HDATA_TSRT]
+    def start_time(self) -> int:
+        ret = self.hdata[Hitobject.HDATA_TSRT]
+        if ret is None:
+            raise ValueError('Hitobject start_time is None')
+
+        return ret
 
 
-    def end_time(self):
-        return self.hdata[Hitobject.HDATA_TEND]
+    def end_time(self) -> int:
+        ret = self.hdata[Hitobject.HDATA_TEND]
+        if ret is None:
+            raise ValueError('Hitobject end_time is None')
+
+        return ret
 
 
-    def tick_data(self):
+    def tick_data(self) -> np.ndarray:
         return np.asarray(self.tdata)
 
 
-    def is_htype(self, hitobject_type):
-        return (self.hdata[Hitobject.HDATA_TYPE] & hitobject_type) > 0
+    def is_htype(self, hitobject_type: int) -> bool:
+        htype = self.hdata[Hitobject.HDATA_TYPE]
+        if htype is None:
+            raise ValueError('Hitobject type is None')
+
+        return ( htype & hitobject_type ) > 0
 
 
-    def is_hlong(self):
+    def is_hlong(self) -> bool:
         return self.is_htype(Hitobject.SLIDER) or self.is_htype(Hitobject.MANIALONG)
 
 
