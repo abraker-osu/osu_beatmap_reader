@@ -19,9 +19,9 @@ class BeatmapBase(IBeatmap):
             self.creator        = ''
             self.name           = ''    # Artist - Title (Creator) [Difficulty]
 
-            self.beatmap_id:    str
-            self.beatmapset_id: str
-            self.beatmap_md5:   str  # generatedilepath:
+            self.beatmap_id     = ''
+            self.beatmapset_id  = ''
+            self.beatmap_md5    = ''  # generatedilepath:
 
 
     class TimingPoint():
