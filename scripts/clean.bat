@@ -10,6 +10,9 @@ echo Removing "beatmap_reader.egg-info"
 rd /s /q beatmap_reader.egg-info
 rd /s /q src\\beatmap_reader.egg-info
 
+echo Removing "pycache..."
+python -Bc "import pathlib; import shutil; [ shutil.rmtree(path) for path in pathlib.Path('.').rglob('__pycache__') ]"
+
 call venv\\Scripts\\activate.bat
 if %ERRORLEVEL% GEQ 1 (
     echo Failed to activate virtual environment!
@@ -23,9 +26,6 @@ if "%VIRTUAL_ENV%" == "" (
 
 echo uninstall lib...
 python -m pip uninstall -y beatmap_reader
-
-echo Removing "pycache..."
-python -Bc "import pathlib; import shutil; [ shutil.rmtree(path) for path in pathlib.Path('.').rglob('__pycache__') ]"
 
 python -m pip cache purge
 
