@@ -1,1 +1,1 @@
--e git+https://github.com/abraker-osu/osu_interfaces.git@refactor#egg=osu_interfaces
+-e git+https://github.com/abraker-osu/osu_interfaces.git@main#egg=osu_interfaces
