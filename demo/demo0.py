@@ -1,4 +1,4 @@
-from osu_beatmap_reader import BeatmapIO
+from beatmap_reader import BeatmapIO
 
 if __name__ == '__main__':
     beatmap = BeatmapIO.open_beatmap('test/data/maps/osu/stargazer.osu')
