@@ -3,6 +3,7 @@ Used to correct pip installing editable directories
 bearing dashes instead of underscores
 """
 import os
+import shutil
 
 
 if 'VIRTUAL_ENV' not in os.environ:
@@ -20,10 +21,11 @@ for subdir in os.listdir(path):
         new_path = old_path.replace('-', '_')
 
         # Check if old path exists, and delete new path if so
-        if os.path.exists(old_path):
-            try: os.removedirs(new_path)
-            except FileNotFoundError:
-                pass
+        if os.path.exists(old_path) and os.path.exists(new_path):
+            shutil.rmtree(new_path, ignore_errors=True)
+            os.remove(new_path)
+            if os.path.exists(new_path):
+                raise FileExistsError(f'Failed to remove {new_path}')
 
         print(f'Renaming {old_path} to {new_path}')
         os.rename(old_path, new_path)
