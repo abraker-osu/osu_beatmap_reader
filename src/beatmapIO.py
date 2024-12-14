@@ -31,18 +31,19 @@ from .hitobject.mania.mania_singlenote_hitobject_base import ManiaSingleNoteHito
 from .hitobject.mania.mania_holdnote_hitobject_base import ManiaHoldNoteHitobjectBase
 
 
-'''
-Handles beatmap loading
 
-Input:
-    load_beatmap - load the beatmap specified
-
-Output:
-    metadata - information about the beatmap
-    hitobjects - list of hitobjects present in the map
-    timingpoints - list of timing points present in the map
-'''
 class BeatmapIO():
+    """
+    Handles beatmap loading
+
+    Input:
+        load_beatmap - load the beatmap specified
+
+    Output:
+        metadata - information about the beatmap
+        hitobjects - list of hitobjects present in the map
+        timingpoints - list of timing points present in the map
+    """
 
     __SECTION_MAP: dict
 
@@ -367,7 +368,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_colour_section(line: str):
+    def __parse_colour_section(line: str, beatmap: BeatmapBase):
         # ignore
         return
 

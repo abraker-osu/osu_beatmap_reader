@@ -1,17 +1,18 @@
 import numpy as np
 
 from osu_interfaces import IBeatmap
+
 from .gamemode import Gamemode
-from .hitobject.hitobject import Hitobject
+from .hitobject import Hitobject
+
 
 class BeatmapBase(IBeatmap):
-
-    PLAYFIELD_WIDTH  = 512  # osu!px
-    PLAYFIELD_HEIGHT = 384  # osu!px
 
     class Metadata():
 
         def __init__(self):
+            IBeatmap.Metadata.__init__(self)
+
             self.beatmap_format = -1    # *.osu format
             self.artist         = ''
             self.title          = ''
@@ -23,29 +24,29 @@ class BeatmapBase(IBeatmap):
             self.beatmapset_id  = ''
             self.beatmap_md5    = ''  # generatedilepath:
 
+    class Difficulty():
+
+        def __init__(self):
+            IBeatmap.Difficulty.__init__(self)
+            self.hp = None
+            self.cs = None
+            self.od = None
+            self.ar = None
+            self.sm = None
+            self.st = None
+
 
     class TimingPoint():
 
         def __init__(self):
-            self.offset:            float
-            self.beat_interval:     float
+            self.offset = 0
+            self.beat_interval = 0
             self.inherited:         bool
             self.meter:             int
 
             self.beat_length:       float
             self.bpm:               float
             self.slider_multiplier: float
-
-
-    class Difficulty():
-
-        def __init__(self):
-            self.hp: float | None = None
-            self.cs: float | None = None
-            self.od: float | None = None
-            self.ar: float | None = None
-            self.sm: float | None = None
-            self.st: float | None = None
 
 
     def __init__(self):

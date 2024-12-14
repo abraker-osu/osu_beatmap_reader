@@ -1,3 +1,4 @@
 *.pyc
 /.vscode/*
 /venv/*
+/osu_beatmap_reader.egg-info/*
