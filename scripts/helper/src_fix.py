@@ -19,6 +19,9 @@ for subdir in os.listdir(path):
     if '-' in subdir:
         new_path = old_path.replace('-', '_')
 
+        try: os.removedirs(new_path)
+        except FileNotFoundError:
+            pass
+
         print(f'Renaming {old_path} to {new_path}')
-        os.removedirs(old_path)
         os.rename(old_path, new_path)
