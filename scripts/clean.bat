@@ -1,5 +1,14 @@
 @echo off
 
+echo Removing ".eggs/..."
+rd /s /q .eggs
+
+echo Removing "build/..."
+rd /s /q build
+
+echo Removing "src/osu_beatmap_reader.egg-info"
+rd /s /q src\\osu_beatmap_reader.egg-info
+
 call venv\\Scripts\\activate.bat
 if %ERRORLEVEL% GEQ 1 (
     echo Failed to activate virtual environment!
@@ -14,14 +23,6 @@ if "%VIRTUAL_ENV%" == "" (
 echo uninstall lib...
 python -m pip uninstall -y osu_beatmap_reader
 
-echo Removing ".eggs/..."
-rd /s /q .eggs
-
-echo Removing "build/..."
-rd /s /q build
-
-echo Removing "src/osu_beatmap_reader.egg-info"
-rd /s /q src\\osu_beatmap_reader.egg-info
 
 echo Removing "pycache..."
 python -Bc "import pathlib; import shutil; [ shutil.rmtree(path) for path in pathlib.Path('.').rglob('__pycache__') ]"
