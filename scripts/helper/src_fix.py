@@ -6,6 +6,12 @@ import os
 import shutil
 
 
+def handle_error(func, path, exc_info):
+    os.chmod(path, 0o755)
+    os.utime(path, None)
+    os.unlink(path)
+
+
 if 'VIRTUAL_ENV' not in os.environ:
     raise Exception('No virtual environment active!')
 
@@ -22,8 +28,7 @@ for subdir in os.listdir(path):
 
         # Check if old path exists, and delete new path if so
         if os.path.exists(old_path) and os.path.exists(new_path):
-            shutil.rmtree(new_path, ignore_errors=True)
-            os.remove(new_path)
+            shutil.rmtree(new_path, onerror=handle_error)
             if os.path.exists(new_path):
                 raise FileExistsError(f'Failed to remove {new_path}')
 
