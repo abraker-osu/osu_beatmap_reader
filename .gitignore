@@ -1,5 +1,5 @@
 *.pyc
-/.vscode/*
 /venv/*
 /beatmap_reader.egg-info/*
 /build/*
+/.vscode/settings.json
