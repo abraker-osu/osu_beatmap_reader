@@ -1,3 +1,8 @@
+"""
+Opens a beatmap and prints its metadata
+
+NOTE: If changes were made, run refresh.bat to apply beatmap_reader changes to venv
+"""
 from beatmap_reader import BeatmapIO
 
 if __name__ == '__main__':
