@@ -6,15 +6,14 @@ class Gamemode():
     CATCH =  2
     MANIA =  3
 
-    def __init__(self, value):
-        if self.__is_valid(value):
-            self.value = value
-            return
-        
-        raise ValueError(f'Invalid gamemode identifier   value = {value}')
+    def __init__(self, value: int):
+        if not self.__is_valid(value):
+            raise ValueError(f'Invalid gamemode identifier   value = {value}')
+
+        self.value = value
 
 
-    def __eq__(self, other):
+    def __eq__(self, other: "int | Gamemode | None"):
         if type(other) == int:
             return self.value == other
 
@@ -27,7 +26,7 @@ class Gamemode():
         raise TypeError(f'Must compare to gamemode indentifier   type = {type(other)}')
 
 
-    def __ne__(self, other):
+    def __ne__(self, other: int):
         return not self.__eq__(other)
 
 
@@ -41,7 +40,7 @@ class Gamemode():
         return data[self.value]
 
 
-    def __is_valid(self, value):
+    def __is_valid(self, value: int):
         data = [
             Gamemode.OSU,
             Gamemode.TAIKO,

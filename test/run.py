@@ -1,12 +1,8 @@
 import unittest
 
-# Beatmap reading test
-from beatmap_reader.unit_tests.test_beatmap import TestBeatmap
 
-
-
-# Override function so that stdout output is not polluted with 
-# the short descriptions it gets from commented out function 
+# Override function so that stdout output is not polluted with
+# the short descriptions it gets from commented out function
 # description text
 unittest.TestCase.shortDescription = lambda x: None
 

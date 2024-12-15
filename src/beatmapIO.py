@@ -31,18 +31,21 @@ from .hitobject.mania.mania_singlenote_hitobject_base import ManiaSingleNoteHito
 from .hitobject.mania.mania_holdnote_hitobject_base import ManiaHoldNoteHitobjectBase
 
 
-'''
-Handles beatmap loading
 
-Input: 
-    load_beatmap - load the beatmap specified
-
-Output: 
-    metadata - information about the beatmap
-    hitobjects - list of hitobjects present in the map
-    timingpoints - list of timing points present in the map
-'''
 class BeatmapIO():
+    """
+    Handles beatmap loading
+
+    Input:
+        load_beatmap - load the beatmap specified
+
+    Output:
+        metadata - information about the beatmap
+        hitobjects - list of hitobjects present in the map
+        timingpoints - list of timing points present in the map
+    """
+
+    __SECTION_MAP: dict
 
     class __Section():
 
@@ -75,33 +78,32 @@ class BeatmapIO():
         }
 
 
-    """
-    Opens a beatmap file and reads it
-
-    Args:
-        filepath: (string) filepath to the beatmap file to load
-    """
     @staticmethod
-    def open_beatmap(filepath=None):
+    def open_beatmap(filepath: str):
+        """
+        Opens a beatmap file and reads it
+
+        Args:
+            filepath: (string) filepath to the beatmap file to load
+        """
         with open(filepath, 'rt', encoding='utf-8') as beatmap_file:
             beatmap = BeatmapIO.load_beatmap(beatmap_file)
 
         beatmap.metadata.beatmap_md5 = hashlib.md5(open(filepath, 'rb').read()).hexdigest()
-
         return beatmap
 
 
-    """
-    Loads beatmap data
-
-    Args:
-        beatmap_file: (string) contents of the beatmap file
-    """
     @staticmethod
-    def load_beatmap(beatmap_data):
+    def load_beatmap(beatmap_data: str | bytes | io.TextIOWrapper):
+        """
+        Loads beatmap data
+
+        Args:
+            beatmap_file: (string) contents of the beatmap file
+        """
         def __load(osu_file_data):
             beatmap = BeatmapBase()
-            
+
             # Load all the data
             BeatmapIO.__parse_beatmap_file_format(osu_file_data, beatmap)
             BeatmapIO.__parse_beatmap_content(osu_file_data, beatmap)
@@ -138,28 +140,29 @@ class BeatmapIO():
         filepath: (string) what to save the beatmap as
     """
     @staticmethod
-    def save_beatmap(beatmap_data, filepath):
+    def save_beatmap(beatmap_data: str, filepath: str):
         with open(filepath, 'wt', encoding='utf-8') as f:
             f.write(beatmap_data)
 
 
     @staticmethod
-    def __postprocess_map(beatmap):
+    def __postprocess_map(beatmap: BeatmapBase):
         # Old maps dont have explicit ar and hp - they take on od value
-        if beatmap.difficulty.ar == None:
+        if beatmap.difficulty.ar is None:
+            if beatmap.difficulty.od is None:
+                raise BeatmapIO.BeatmapIOException('OD is none')
             beatmap.set_ar(beatmap.difficulty.od)
 
-        if beatmap.difficulty.hp == None:
+        if beatmap.difficulty.hp is None:
+            if beatmap.difficulty.od is None:
+                raise BeatmapIO.BeatmapIOException('OD is none')
             beatmap.set_hp(beatmap.difficulty.od)
-
-        if beatmap.gamemode == None:
-            beatmap.gamemode = Gamemode(Gamemode.OSU)
 
         beatmap.metadata.name = beatmap.metadata.artist + ' - ' + beatmap.metadata.title + ' (' + beatmap.metadata.creator + ') ' + '[' + beatmap.metadata.version + ']'
 
 
     @staticmethod
-    def __parse_beatmap_file_format(beatmap_data, beatmap):
+    def __parse_beatmap_file_format(beatmap_data: io.StringIO, beatmap: BeatmapBase):
         line  = beatmap_data.readline()
         data  = line.split('osu file format v')
 
@@ -168,7 +171,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_beatmap_content(beatmap_data, beatmap):
+    def __parse_beatmap_content(beatmap_data: io.StringIO, beatmap: BeatmapBase):
         if beatmap.metadata.beatmap_format == -1: return
 
         section = BeatmapIO.__Section.SECTION_NONE
@@ -192,13 +195,13 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_section(section, line, beatmap):
+    def __parse_section(section, line: str, beatmap: BeatmapBase):
         if section != BeatmapIO.__Section.SECTION_NONE:
             BeatmapIO.__SECTION_MAP[section](line, beatmap)
 
 
     @staticmethod
-    def __parse_general_section(line, beatmap):
+    def __parse_general_section(line: str, beatmap: BeatmapBase):
         data = line.split(':', 1)
         if len(data) < 2: return
 
@@ -221,7 +224,7 @@ class BeatmapIO():
             return
 
         if data[0] == 'Mode':
-            beatmap.gamemode = int(data[1])
+            beatmap.gamemode = Gamemode(int(data[1]))
             return
 
         if data[0] == 'LetterboxInBreaks':
@@ -238,7 +241,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_editor_section(line, beatmap):
+    def __parse_editor_section(line: str, beatmap: BeatmapBase):
         data = line.split(':', 1)
         if len(data) < 2: return
 
@@ -260,7 +263,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_metadata_section(line, beatmap):
+    def __parse_metadata_section(line: str, beatmap: BeatmapBase):
         data = line.split(':', 1)
         if len(data) < 2: return
         data[0] = data[0].strip()
@@ -307,7 +310,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_difficulty_section(line, beatmap):
+    def __parse_difficulty_section(line: str, beatmap: BeatmapBase):
         data = line.split(':', 1)
         if len(data) < 2: return
 
@@ -339,24 +342,24 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_events_section(line, beatmap):
+    def __parse_events_section(line: str, beatmap: BeatmapBase):
         # ignore
         return
 
 
     @staticmethod
-    def __parse_timingpoints_section(line, beatmap):
+    def __parse_timingpoints_section(line: str, beatmap: BeatmapBase):
         data = line.split(',')
-        if len(data) < 2: return
+        if len(data) < 2:
+            return
 
         timing_point = BeatmapBase.TimingPoint()
-        
+
         timing_point.offset        = float(data[0])
         timing_point.beat_interval = float(data[1])
 
         # Old maps don't have meteres
-        if len(data) > 2: timing_point.meter = int(data[2])
-        else:             timing_point.meter = 4
+        timing_point.meter = int(data[2]) if len(data) > 2 else 4
 
         if len(data) > 6: timing_point.inherited = False if int(data[6]) == 1 else True
         else:             timing_point.inherited = False
@@ -365,33 +368,34 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __parse_colour_section(self, line):
+    def __parse_colour_section(line: str, beatmap: BeatmapBase):
         # ignore
         return
 
 
     @staticmethod
-    def __parse_hitobjects_section(line, beatmap):
+    def __parse_hitobjects_section(line: str, beatmap: BeatmapBase):
         data = line.split(',')
-        if len(data) < 2: return
-        
+        if len(data) < 2:
+            return
+
         hitobject_type = int(data[3])
 
         if beatmap.gamemode == Gamemode(Gamemode.OSU) or beatmap.gamemode == None:
             if hitobject_type & Hitobject.CIRCLE > 0:
                 beatmap.hitobjects.append(StdSingleNoteHitobjectBase(
-                    posx   = int(data[0]), 
-                    posy   = int(data[1]), 
-                    tstart = int(data[2]), 
+                    posx   = int(data[0]),
+                    posy   = int(data[1]),
+                    tstart = int(data[2]),
                     htype  = int(data[3]),
                 ))
                 return
 
             if hitobject_type & Hitobject.SLIDER > 0:
                 beatmap.hitobjects.append(StdHoldNoteHitobjectBase(
-                    posx    = int(data[0]), 
-                    posy    = int(data[1]), 
-                    tstart  = int(data[2]), 
+                    posx    = int(data[0]),
+                    posy    = int(data[1]),
+                    tstart  = int(data[2]),
                     htype   = int(data[3]),
                     sdata   = data[5],
                     repeats = int(data[6]),
@@ -410,7 +414,7 @@ class BeatmapIO():
                 return
 
             raise BeatmapIO.BeatmapIOException(f'Unexpected osu!std hitobject encountered: {hitobject_type}')
-            
+
         if beatmap.gamemode == Gamemode(Gamemode.TAIKO):
             raise BeatmapIO.BeatmapIOException('No support osu!taiko gamemode yet!')
 
@@ -450,7 +454,7 @@ class BeatmapIO():
                 beatmap.hitobjects.append(ManiaSingleNoteHitobjectBase(
                     posx   = int(data[0]),
                     posy   = int(data[1]),
-                    tstart = int(data[2]), 
+                    tstart = int(data[2]),
                     htype  = int(data[3]),
                     keys   = beatmap.difficulty.cs
                 ))
@@ -471,7 +475,7 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __process_timing_points(beatmap):
+    def __process_timing_points(beatmap: BeatmapBase):
         beatmap.bpm_min = float('inf')
         beatmap.bpm_max = float('-inf')
 
@@ -503,9 +507,9 @@ class BeatmapIO():
 
 
     @staticmethod
-    def __postprocess_hitobjects(beatmap):
+    def __postprocess_hitobjects(beatmap: BeatmapBase):
         t_idx = 0
-        
+
         for hitobject in beatmap.hitobjects:
             if beatmap.gamemode == Gamemode.OSU or beatmap.gamemode == None:
                 if not hitobject.is_htype(Hitobject.SLIDER):
@@ -518,7 +522,7 @@ class BeatmapIO():
                         t_idx = i
                     else:
                         break
-                
+
                 timing_point = beatmap.timing_points[t_idx]
                 beat_length = timing_point.beat_length
                 velocity = (100/beat_length) * (-100/timing_point.slider_multiplier) * beatmap.difficulty.sm
